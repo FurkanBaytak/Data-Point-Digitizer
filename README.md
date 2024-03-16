@@ -13,3 +13,7 @@ The process is shown below - an image file is imported and then digitized within
 
 # Additional Resources
 - [Engauge Digitizer](https://markummitchell.github.io/engauge-digitizer/)
+
+# Project Members
+- [Furkan BAYTAK](https://github.com/FurkanBaytak)
+- [Furkan ÖZKAYA](https://github.com/Elhier0)
