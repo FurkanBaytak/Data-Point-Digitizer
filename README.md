@@ -10,3 +10,6 @@ The Engauge Digitizer tool accepts image files (like PNG, JPEG and TIFF) contain
 The process is shown below - an image file is imported and then digitized within Engauge by placing points along axes and curves. Data points can be transferred to other software applications by exporting to a text file, or directly using copy and paste. Work can be saved into an Engauge DIG file for later editing.
 
 ![ProcessFlowchart](https://github.com/FurkanBaytak/EngaugeDigitizer/assets/91830994/09cf490a-e135-40d2-95bf-b12cb53f8c44)
+
+# Additional Resources
+- [Engauge Digitizer]([https://docs.python.org/3/](https://markummitchell.github.io/engauge-digitizer/))
