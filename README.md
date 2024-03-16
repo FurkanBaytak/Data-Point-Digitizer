@@ -12,4 +12,4 @@ The process is shown below - an image file is imported and then digitized within
 ![ProcessFlowchart](https://github.com/FurkanBaytak/EngaugeDigitizer/assets/91830994/09cf490a-e135-40d2-95bf-b12cb53f8c44)
 
 # Additional Resources
-- [Engauge Digitizer]([https://docs.python.org/3/](https://markummitchell.github.io/engauge-digitizer/))
+- [Engauge Digitizer](https://markummitchell.github.io/engauge-digitizer/)
