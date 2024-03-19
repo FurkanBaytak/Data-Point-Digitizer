@@ -17,3 +17,4 @@ The process is shown below - an image file is imported and then digitized within
 # Project Members
 - [Furkan BAYTAK](https://github.com/FurkanBaytak)
 - [Furkan ÖZKAYA](https://github.com/Elhier0)
+- [Fırat Kaya ÖZGENÇ](https://github.com/kayaozg)
