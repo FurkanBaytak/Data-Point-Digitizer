@@ -36,8 +36,48 @@ class ImageViewer:
         self.checklist = None
 
     def create_widgets(self):
-        self.open_image_button = tk.Button(self.root, text="Open Image", command=self.open_image)
-        self.open_image_button.pack(pady=10)
+        menubar = tk.Menu(self.root)
+
+        # File menu
+        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu.add_command(label="Open Image", command=self.open_image)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.root.quit)
+        menubar.add_cascade(label="File", menu=file_menu)
+
+        # View menu
+        view_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="View", menu=view_menu)
+
+        # Zoom submenu
+        zoom_menu = tk.Menu(view_menu, tearoff=0)
+        zoom_menu.add_command(label="Zoom In", command=self.zoom_in)
+        zoom_menu.add_command(label="Zoom Out", command=self.zoom_out)
+        zoom_menu.add_separator()
+
+        zoom_ratios = ["16:1", "8:1", "4:1", "2:1", "1:1", "1:2", "1:4", "1:8", "1:16", "Fill"]
+        for ratio in zoom_ratios:
+            zoom_menu.add_command(label=ratio, command=lambda ratio=ratio: self.set_zoom_factor(ratio))
+
+        view_menu.add_cascade(label="Zoom", menu=zoom_menu)
+
+        # Curves submenu
+        curves_menu = tk.Menu(view_menu, tearoff=0)
+        self.hide_all_curves_var = tk.BooleanVar(value=True)
+        self.show_selected_curve_var = tk.BooleanVar(value=False)
+        self.show_all_curves_var = tk.BooleanVar(value=False)
+
+        curves_menu.add_checkbutton(label="Hide All Curves", variable=self.hide_all_curves_var,
+                                    command=self.hide_all_curves)
+        curves_menu.add_checkbutton(label="Show Selected Curve", variable=self.show_selected_curve_var,
+                                    command=self.show_selected_curve)
+        curves_menu.add_checkbutton(label="Show All Curves", variable=self.show_all_curves_var,
+                                    command=self.show_all_curves)
+
+        view_menu.add_cascade(label="Curves", menu=curves_menu)
+
+        # Configure
+        self.root.config(menu=menubar)
 
         self.axis_button = tk.Button(self.root, text="place axis", command=lambda: self.show_axis())
         self.axis_button.pack(pady=10, side=tk.LEFT)
@@ -60,6 +100,61 @@ class ImageViewer:
         self.checklist = tk.Listbox(self.root, selectmode=tk.MULTIPLE)
         self.checklist.pack(pady=10)
 
+    def zoom_in(self):
+        self.zoom_factor *= 1.2
+        self.update_image_zoom()
+
+    def zoom_out(self):
+        self.zoom_factor /= 1.2
+        self.update_image_zoom()
+
+    def set_zoom_factor(self, ratio):
+        if ratio == "Fill":
+            self.zoom_fill()
+        else:
+            parts = ratio.split(":")
+            if len(parts) == 2:
+                width_ratio, height_ratio = map(int, parts)
+                self.zoom_factor = width_ratio / height_ratio
+                self.update_image_zoom()
+
+    def zoom_fill(self):
+        if self.image_original is not None:
+            width = self.canvas.winfo_width()
+            height = self.canvas.winfo_height()
+            resized_image = self.image_original.resize((width, height), resample=Image.LANCZOS)
+            self.image_tk = ImageTk.PhotoImage(resized_image)
+            self.canvas.delete("all")
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image_tk)
+
+    def update_image_zoom(self):
+        if self.image_original is not None:
+            width = int(self.image_original.width * self.zoom_factor)
+            height = int(self.image_original.height * self.zoom_factor)
+            resized_image = self.image_original.resize((width, height), resample=Image.LANCZOS)
+            self.image_tk = ImageTk.PhotoImage(resized_image)
+            self.canvas.delete("all")
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image_tk)
+
+    def hide_all_curves(self):
+        self.update_checkboxes(self.hide_all_curves_var)
+        #tbc
+    def show_selected_curve(self):
+        self.update_checkboxes(self.show_selected_curve_var)
+        # tbc
+    def show_all_curves(self):
+        self.update_checkboxes(self.show_all_curves_var)
+        # tbc
+    def update_checkboxes(self, selected_var):
+        if selected_var == self.hide_all_curves_var:
+            self.show_selected_curve_var.set(False)
+            self.show_all_curves_var.set(False)
+        elif selected_var == self.show_selected_curve_var:
+            self.hide_all_curves_var.set(False)
+            self.show_all_curves_var.set(False)
+        elif selected_var == self.show_all_curves_var:
+            self.hide_all_curves_var.set(False)
+            self.show_selected_curve_var.set(False)
 
     @staticmethod
     def format_control(file_path):
