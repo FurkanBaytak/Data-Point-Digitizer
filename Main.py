@@ -76,7 +76,6 @@ class ImageViewer:
 
         view_menu.add_cascade(label="Curves", menu=curves_menu)
 
-        # Configure
         self.root.config(menu=menubar)
 
         self.axis_button = tk.Button(self.root, text="place axis", command=lambda: self.show_axis())
