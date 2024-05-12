@@ -4,10 +4,12 @@ from tkinter import filedialog, messagebox
 import numpy as np
 from PIL import Image, ImageTk
 
-# a
-class ImageViewer:
 
+class ImageViewer:
     def __init__(self, _root):
+        self.show_all_curves_var = None
+        self.show_selected_curve_var = None
+        self.hide_all_curves_var = None
         self.calculate_button = None
         self.add_points_button = None
         self.set_axis_button = None
@@ -56,8 +58,8 @@ class ImageViewer:
         zoom_menu.add_separator()
 
         zoom_ratios = ["16:1", "8:1", "4:1", "2:1", "1:1", "1:2", "1:4", "1:8", "1:16", "Fill"]
-        for ratio in zoom_ratios:
-            zoom_menu.add_command(label=ratio, command=lambda ratio=ratio: self.set_zoom_factor(ratio))
+        for _ratio in zoom_ratios:
+            zoom_menu.add_command(label=_ratio, command=lambda ratio=_ratio: self.set_zoom_factor(ratio))
 
         view_menu.add_cascade(label="Zoom", menu=zoom_menu)
 
@@ -137,13 +139,16 @@ class ImageViewer:
 
     def hide_all_curves(self):
         self.update_checkboxes(self.hide_all_curves_var)
-        #tbc
+        # tbc
+
     def show_selected_curve(self):
         self.update_checkboxes(self.show_selected_curve_var)
         # tbc
+
     def show_all_curves(self):
         self.update_checkboxes(self.show_all_curves_var)
         # tbc
+
     def update_checkboxes(self, selected_var):
         if selected_var == self.hide_all_curves_var:
             self.show_selected_curve_var.set(False)
@@ -193,21 +198,25 @@ class ImageViewer:
 
     def show_axis(self):
         if self.axis_state:
+            root.config(cursor="crosshair")
             self.canvas.bind("<Button-1>", self.place_axis)
             self.canvas.bind("<Button-3>", self.delete_axis)
 
             self.axis_state = False
         else:
+            root.config(cursor="")
             self.canvas.bind("<Button-1>", self.mouse_click)
             self.canvas.bind("<Button-3>", self.select_axis)
             self.axis_state = True
 
     def show_points(self):
         if self.axis_state:
+            root.config(cursor="dotbox")
             self.canvas.bind("<Button-1>", self.add_points)
             self.canvas.bind("<Button-3>", self.delete_point)
             self.axis_state = False
         else:
+            root.config(cursor="")
             self.canvas.bind("<Button-1>", self.mouse_click)
             self.canvas.bind("<Button-3>", self.select_axis)
             self.axis_state = True
@@ -220,7 +229,7 @@ class ImageViewer:
             messagebox.showinfo("Info", "You can only add 4 axes.")
             return
 
-        x, y = event.x, event.y
+        x, y = float(event.x), float(event.y)
         self.canvas.create_line(x - 10, y, x + 10, y, fill="red", width=1)
         self.canvas.create_line(x, y - 10, x, y + 10, fill="red", width=1)
 
@@ -248,10 +257,10 @@ class ImageViewer:
                     self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
                     self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
                     self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
-                for i, ponint in enumerate(self.points):
-                    self.canvas.create_oval(ponint[0] - 2, ponint[1] - 2, ponint[0] + 2, ponint[1] + 2, fill="blue")
-                    point_text = f"X: {ponint[0]}, Y: {ponint[1]}"
-                    self.canvas.create_text(ponint[0], ponint[1] - 20, text=point_text, fill="purple")
+                for i, _point in enumerate(self.points):
+                    self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
+                    point_text = f"X: {_point[0]}, Y: {_point[1]}"
+                    self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
 
     def select_axis(self, event):
         x, y = event.x, event.y
@@ -330,20 +339,27 @@ class ImageViewer:
         value_window = tk.Toplevel(self.root)
         value_window.title("Add Value")
 
+        x_label = tk.Label(value_window, text=f"X Coordinate: {x}")
+        x_label.grid(row=0, column=0, padx=5, pady=5)
+
+        y_label = tk.Label(value_window, text=f"Y Coordinate: {y}")
+        y_label.grid(row=1, column=0, padx=5, pady=5)
+
         value_x_label = tk.Label(value_window, text="Value for X:")
-        value_x_label.grid(row=0, column=0, padx=5, pady=5)
+        value_x_label.grid(row=2, column=0, padx=5, pady=5)
         value_x_entry = tk.Entry(value_window)
-        value_x_entry.grid(row=0, column=1, padx=5, pady=5)
+        value_x_entry.grid(row=2, column=1, padx=5, pady=5)
 
         value_y_label = tk.Label(value_window, text="Value for Y:")
-        value_y_label.grid(row=1, column=0, padx=5, pady=5)
+        value_y_label.grid(row=3, column=0, padx=5, pady=5)
         value_y_entry = tk.Entry(value_window)
-        value_y_entry.grid(row=1, column=1, padx=5, pady=5)
+        value_y_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        value_button = tk.Button(value_window, text="Add Value",
-                                 command=lambda: self.add_value_to_axis(value_x_entry.get(), value_y_entry.get(), x, y,
-                                                                        value_window))
-        value_button.grid(row=2, column=0, columnspan=2, pady=10)
+        confirm_button = tk.Button(value_window, text="Add Value",
+                                   command=lambda: self.add_value_to_axis(value_x_entry.get(), value_y_entry.get(), x,
+                                                                          y,
+                                                                          value_window))
+        confirm_button.grid(row=4, column=0, columnspan=2, pady=10)
 
     def add_value_to_axis(self, value_x, value_y, x, y, value_window):
         # İf the value is not a digit, show an error message
@@ -375,10 +391,10 @@ class ImageViewer:
                 self.points.pop(index)
                 self.canvas.delete("all")
                 self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image_tk)
-                for i,ponint in enumerate(self.points):
-                    self.canvas.create_oval(ponint[0] - 2, ponint[1] - 2, ponint[0] + 2, ponint[1] + 2, fill="blue")
-                    point_text = f"X: {ponint[0]}, Y: {ponint[1]}"
-                    self.canvas.create_text(ponint[0], ponint[1] - 20, text=point_text, fill="purple")
+                for i, _point in enumerate(self.points):
+                    self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
+                    point_text = f"X: {_point[0]}, Y: {_point[1]}"
+                    self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
                 for i, _axis in enumerate(self.axis_list):
                     self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
                     self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
@@ -404,24 +420,15 @@ class ImageViewer:
 
         x_min = min(x_list)
         x_max = max(x_list)
-        y_min = min(y_list)
-        y_max = max(y_list)
 
         x_value_min = min(x_value_list)
         x_value_max = max(x_value_list)
-        y_value_min = min(y_value_list)
-        y_value_max = max(y_value_list)
 
         x_diff = abs(x_max) - abs(x_min)
-        y_diff = abs(y_max) - abs(y_min)
 
         x_value_diff = x_value_max - x_value_min
-        y_value_diff = y_value_min - y_value_max
 
         x_ratio = x_diff / x_value_diff
-        y_ratio = y_diff / y_value_diff
-
-
 
         for point in points:
             x = point[0]
@@ -432,19 +439,9 @@ class ImageViewer:
             coeffs = np.polyfit(y_list, y_value_list, 1)
             y_value = coeffs[0] * y + coeffs[1]
 
-
             self.point_values.append((x_value, y_value))
 
         print(self.point_values)
-
-
-
-
-
-
-
-
-
 
 
 root = tk.Tk()
