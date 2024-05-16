@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 
 import numpy as np
 from PIL import Image, ImageTk
@@ -14,6 +14,7 @@ class ImageViewer:
         self.add_points_button = None
         self.set_axis_button = None
         self.canvas = None
+        self.treeview = None
         self.root = _root
         self.root.title("Show Image")
         self.zoom_factor = 1.2
@@ -35,7 +36,8 @@ class ImageViewer:
         self.points = []
         self.point_values = []
 
-        self.checklist = None
+        self.curve_counter = 0
+        self.curve_points = {}
 
     def create_widgets(self):
         menubar = tk.Menu(self.root)
@@ -98,8 +100,23 @@ class ImageViewer:
         self.canvas.bind("<Button-1>", self.mouse_click)
         self.canvas.bind("<Button-3>", self.select_axis)
 
-        self.checklist = tk.Listbox(self.root, selectmode=tk.MULTIPLE)
-        self.checklist.pack(pady=10)
+        self.treeview = ttk.Treeview(self.root, columns=('X Value', 'Y Value'))
+        self.treeview.heading('#0', text='Point')
+        self.treeview.heading('#1', text='X Value')
+        self.treeview.heading('#2', text='Y Value')
+        self.treeview.pack(pady=10)
+
+        # Add Curve Selection Button
+        self.add_curve_button = tk.Button(self.root, text="Add Curve", command=self.add_curve)
+        self.add_curve_button.pack(pady=10)
+
+        # Add a listbox to display curves
+        self.curve_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE)
+        self.curve_listbox.pack(pady=10, padx=10)
+
+        # Add a label for curve selection
+        self.select_curve_label = tk.Label(self.root, text="Select Curve:")
+        self.select_curve_label.pack(pady=10)
 
     def zoom_in(self):
         self.zoom_factor *= 1.2
@@ -159,6 +176,12 @@ class ImageViewer:
         elif selected_var == self.show_all_curves_var:
             self.hide_all_curves_var.set(False)
             self.show_selected_curve_var.set(False)
+
+    def add_curve(self):
+        self.curve_counter += 1
+        curve_name = f'Curve {self.curve_counter}'
+        self.curve_points[curve_name] = []  # Initialize an empty list for points of the new curve
+        self.curve_listbox.insert(tk.END, curve_name)
 
     @staticmethod
     def format_control(file_path):
@@ -441,7 +464,11 @@ class ImageViewer:
 
             self.point_values.append((x_value, y_value))
 
-        print(self.point_values)
+        for item in self.treeview.get_children():
+            self.treeview.delete(item)
+
+        for idx, (x_value, y_value) in enumerate(self.point_values, start=1):
+            self.treeview.insert('', 'end', text=f'Point {idx}', values=(x_value, y_value))
 
 
 root = tk.Tk()
