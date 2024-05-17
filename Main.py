@@ -116,7 +116,6 @@ class ImageViewer:
         self.axis_list.append((x, y))
         self.axis_counter += 1
         self.ask_value_for_axis(x, y)
-        self.widgets.save_state()
 
     def delete_axis(self, event):
         if self.value_entered:
@@ -140,7 +139,6 @@ class ImageViewer:
                     self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
                     point_text = f"X: {_point[0]}, Y: {_point[1]}"
                     self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
-                self.widgets.save_state()
 
     def select_axis(self, event):
         x, y = event.x, event.y
@@ -210,7 +208,6 @@ class ImageViewer:
         self.axis_list.append((x, y))
         self.axis_counter += 1
         self.ask_value_for_axis(x, y)
-        self.widgets.save_state()
         window.destroy()  # Close the window
 
     def ask_value_for_axis(self, x, y):
@@ -247,7 +244,6 @@ class ImageViewer:
             self.value_list.append((value_x, value_y))
             print(self.value_list)
             value_window.destroy()  # Close the window
-            self.widgets.save_state()
         else:
             messagebox.showerror("Error", "Please, Enter valid values for X and Y.")
         self.value_entered = False
@@ -261,7 +257,6 @@ class ImageViewer:
         self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill="blue")
         point_text = f"X: {x}, Y: {y}"
         self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
-        self.widgets.save_state()
 
     def delete_point(self, event):
         x, y = event.x, event.y
@@ -279,7 +274,6 @@ class ImageViewer:
                     self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
                     self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
                     self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
-                self.widgets.save_state()
 
     def calculate_values(self):
         axis1 = self.axis_list[0]
