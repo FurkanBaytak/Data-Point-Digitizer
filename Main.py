@@ -3,6 +3,7 @@ from tkinter import filedialog, messagebox
 
 import numpy as np
 from PIL import Image, ImageTk
+from Widgets import Widgets
 
 
 class ImageViewer:
@@ -17,8 +18,6 @@ class ImageViewer:
         self.root = _root
         self.root.title("Show Image")
         self.zoom_factor = 1.2
-
-        self.create_widgets()
 
         self.open_image_button = None
         self.image_original = None
@@ -37,128 +36,8 @@ class ImageViewer:
 
         self.checklist = None
 
-    def create_widgets(self):
-        menubar = tk.Menu(self.root)
-
-        # File menu
-        file_menu = tk.Menu(menubar, tearoff=0)
-        file_menu.add_command(label="Open Image", command=self.open_image)
-        file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self.root.quit)
-        menubar.add_cascade(label="File", menu=file_menu)
-
-        # View menu
-        view_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="View", menu=view_menu)
-
-        # Zoom submenu
-        zoom_menu = tk.Menu(view_menu, tearoff=0)
-        zoom_menu.add_command(label="Zoom In", command=self.zoom_in)
-        zoom_menu.add_command(label="Zoom Out", command=self.zoom_out)
-        zoom_menu.add_separator()
-
-        zoom_ratios = ["16:1", "8:1", "4:1", "2:1", "1:1", "1:2", "1:4", "1:8", "1:16", "Fill"]
-        for _ratio in zoom_ratios:
-            zoom_menu.add_command(label=_ratio, command=lambda ratio=_ratio: self.set_zoom_factor(ratio))
-
-        view_menu.add_cascade(label="Zoom", menu=zoom_menu)
-
-        # Curves submenu
-        curves_menu = tk.Menu(view_menu, tearoff=0)
-        self.hide_all_curves_var = tk.BooleanVar(value=True)
-        self.show_selected_curve_var = tk.BooleanVar(value=False)
-        self.show_all_curves_var = tk.BooleanVar(value=False)
-
-        curves_menu.add_checkbutton(label="Hide All Curves", variable=self.hide_all_curves_var,
-                                    command=self.hide_all_curves)
-        curves_menu.add_checkbutton(label="Show Selected Curve", variable=self.show_selected_curve_var,
-                                    command=self.show_selected_curve)
-        curves_menu.add_checkbutton(label="Show All Curves", variable=self.show_all_curves_var,
-                                    command=self.show_all_curves)
-
-        view_menu.add_cascade(label="Curves", menu=curves_menu)
-
-        self.root.config(menu=menubar)
-
-        self.axis_button = tk.Button(self.root, text="place axis", command=lambda: self.show_axis())
-        self.axis_button.pack(pady=10, side=tk.LEFT)
-
-        self.set_axis_button = tk.Button(self.root, text="set axis", command=lambda: self.set_axis())
-        self.set_axis_button.pack(pady=10, side=tk.LEFT, padx=10)
-
-        self.add_points_button = tk.Button(self.root, text="Add Points", command=lambda: self.show_points())
-        self.add_points_button.pack(pady=10, side=tk.LEFT, padx=10)
-
-        self.calculate_button = tk.Button(self.root, text="Calculate", command=lambda: self.calculate_values())
-        self.calculate_button.pack(pady=10, side=tk.LEFT, padx=10)
-
-        # Create a canvas to display the image
-        self.canvas = tk.Canvas(self.root, bg="white", width=800, height=600)
-        self.canvas.pack()
-        self.canvas.bind("<Button-1>", self.mouse_click)
-        self.canvas.bind("<Button-3>", self.select_axis)
-
-        self.checklist = tk.Listbox(self.root, selectmode=tk.MULTIPLE)
-        self.checklist.pack(pady=10)
-
-    def zoom_in(self):
-        self.zoom_factor *= 1.2
-        self.update_image_zoom()
-
-    def zoom_out(self):
-        self.zoom_factor /= 1.2
-        self.update_image_zoom()
-
-    def set_zoom_factor(self, ratio):
-        if ratio == "Fill":
-            self.zoom_fill()
-        else:
-            parts = ratio.split(":")
-            if len(parts) == 2:
-                width_ratio, height_ratio = map(int, parts)
-                self.zoom_factor = width_ratio / height_ratio
-                self.update_image_zoom()
-
-    def zoom_fill(self):
-        if self.image_original is not None:
-            width = self.canvas.winfo_width()
-            height = self.canvas.winfo_height()
-            resized_image = self.image_original.resize((width, height), resample=Image.LANCZOS)
-            self.image_tk = ImageTk.PhotoImage(resized_image)
-            self.canvas.delete("all")
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image_tk)
-
-    def update_image_zoom(self):
-        if self.image_original is not None:
-            width = int(self.image_original.width * self.zoom_factor)
-            height = int(self.image_original.height * self.zoom_factor)
-            resized_image = self.image_original.resize((width, height), resample=Image.LANCZOS)
-            self.image_tk = ImageTk.PhotoImage(resized_image)
-            self.canvas.delete("all")
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image_tk)
-
-    def hide_all_curves(self):
-        self.update_checkboxes(self.hide_all_curves_var)
-        # tbc
-
-    def show_selected_curve(self):
-        self.update_checkboxes(self.show_selected_curve_var)
-        # tbc
-
-    def show_all_curves(self):
-        self.update_checkboxes(self.show_all_curves_var)
-        # tbc
-
-    def update_checkboxes(self, selected_var):
-        if selected_var == self.hide_all_curves_var:
-            self.show_selected_curve_var.set(False)
-            self.show_all_curves_var.set(False)
-        elif selected_var == self.show_selected_curve_var:
-            self.hide_all_curves_var.set(False)
-            self.show_all_curves_var.set(False)
-        elif selected_var == self.show_all_curves_var:
-            self.hide_all_curves_var.set(False)
-            self.show_selected_curve_var.set(False)
+        self.widgets = Widgets(self)
+        self.widgets.create_widgets()
 
     @staticmethod
     def format_control(file_path):
@@ -172,11 +51,10 @@ class ImageViewer:
         file_path = filedialog.askopenfilename()
         if file_path:
             try:
-                # Resmi aç
+                # Open the image
                 self.image_original = Image.open(file_path)
                 if not self.format_control(file_path):
-                    raise messagebox.showerror("Error", "Image format is not supported!"
-                                                        " Please select a valid image file.")
+                    raise messagebox.showerror("Error", "Image format is not supported! Please select a valid image file.")
                 self.image_original = self.image_original.resize((800, 600), Image.Resampling.LANCZOS)
                 self.image_tk = ImageTk.PhotoImage(self.image_original)
 
@@ -187,36 +65,36 @@ class ImageViewer:
 
             except (IOError, SyntaxError):
                 # Raise an error if the file is not a valid image file
-                raise messagebox.showerror("Hata", "Image file is not valid! Please select a valid image file.")
+                raise messagebox.showerror("Error", "Image file is not valid! Please select a valid image file.")
 
     def mouse_click(self, event):
         if hasattr(self.root, "label"):
-            self.root.label.destroy()  # İf the label exists, destroy it
+            self.root.label.destroy()  # If the label exists, destroy it
         self.root.label = tk.Label(self.root, text=f"X: {event.x}, Y: {event.y}")
         self.root.label.place(x=event.x, y=event.y)
         self.root.label.pack()
 
     def show_axis(self):
         if self.axis_state:
-            root.config(cursor="crosshair")
+            self.root.config(cursor="crosshair")
             self.canvas.bind("<Button-1>", self.place_axis)
             self.canvas.bind("<Button-3>", self.delete_axis)
 
             self.axis_state = False
         else:
-            root.config(cursor="")
+            self.root.config(cursor="")
             self.canvas.bind("<Button-1>", self.mouse_click)
             self.canvas.bind("<Button-3>", self.select_axis)
             self.axis_state = True
 
     def show_points(self):
         if self.axis_state:
-            root.config(cursor="dotbox")
+            self.root.config(cursor="dotbox")
             self.canvas.bind("<Button-1>", self.add_points)
             self.canvas.bind("<Button-3>", self.delete_point)
             self.axis_state = False
         else:
-            root.config(cursor="")
+            self.root.config(cursor="")
             self.canvas.bind("<Button-1>", self.mouse_click)
             self.canvas.bind("<Button-3>", self.select_axis)
             self.axis_state = True
@@ -238,6 +116,7 @@ class ImageViewer:
         self.axis_list.append((x, y))
         self.axis_counter += 1
         self.ask_value_for_axis(x, y)
+        self.widgets.save_state()
 
     def delete_axis(self, event):
         if self.value_entered:
@@ -261,6 +140,7 @@ class ImageViewer:
                     self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
                     point_text = f"X: {_point[0]}, Y: {_point[1]}"
                     self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
+                self.widgets.save_state()
 
     def select_axis(self, event):
         x, y = event.x, event.y
@@ -287,8 +167,7 @@ class ImageViewer:
         y_entry = tk.Entry(set_axis_window)
         y_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        confirm_button = tk.Button(set_axis_window, text="Confirm", command=lambda: self.confirm_axis(set_axis_window,
-                                                                                                      x_entry, y_entry))
+        confirm_button = tk.Button(set_axis_window, text="Confirm", command=lambda: self.confirm_axis(set_axis_window, x_entry, y_entry))
         confirm_button.grid(row=2, column=0, columnspan=2, pady=10)
 
     def confirm_axis(self, window, x_entry, y_entry):
@@ -331,6 +210,7 @@ class ImageViewer:
         self.axis_list.append((x, y))
         self.axis_counter += 1
         self.ask_value_for_axis(x, y)
+        self.widgets.save_state()
         window.destroy()  # Close the window
 
     def ask_value_for_axis(self, x, y):
@@ -355,14 +235,11 @@ class ImageViewer:
         value_y_entry = tk.Entry(value_window)
         value_y_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        confirm_button = tk.Button(value_window, text="Add Value",
-                                   command=lambda: self.add_value_to_axis(value_x_entry.get(), value_y_entry.get(), x,
-                                                                          y,
-                                                                          value_window))
+        confirm_button = tk.Button(value_window, text="Add Value", command=lambda: self.add_value_to_axis(value_x_entry.get(), value_y_entry.get(), x, y, value_window))
         confirm_button.grid(row=4, column=0, columnspan=2, pady=10)
 
     def add_value_to_axis(self, value_x, value_y, x, y, value_window):
-        # İf the value is not a digit, show an error message
+        # If the value is not a digit, show an error message
         if value_x.isdigit() and value_y.isdigit():
             value_x = int(value_x)
             value_y = int(value_y)
@@ -370,6 +247,7 @@ class ImageViewer:
             self.value_list.append((value_x, value_y))
             print(self.value_list)
             value_window.destroy()  # Close the window
+            self.widgets.save_state()
         else:
             messagebox.showerror("Error", "Please, Enter valid values for X and Y.")
         self.value_entered = False
@@ -383,6 +261,7 @@ class ImageViewer:
         self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill="blue")
         point_text = f"X: {x}, Y: {y}"
         self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
+        self.widgets.save_state()
 
     def delete_point(self, event):
         x, y = event.x, event.y
@@ -400,6 +279,7 @@ class ImageViewer:
                     self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
                     self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
                     self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
+                self.widgets.save_state()
 
     def calculate_values(self):
         axis1 = self.axis_list[0]
@@ -444,8 +324,7 @@ class ImageViewer:
         print(self.point_values)
 
 
-root = tk.Tk()
-
-ImageViewer = ImageViewer(root)
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    ImageViewer = ImageViewer(root)
+    root.mainloop()
