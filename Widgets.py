@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from tkinter import ttk
 from PIL import Image, ImageTk
-
+from GeometryWindow import GeometryWindow
 
 class Widgets:
     def __init__(self, viewer):
@@ -9,6 +10,7 @@ class Widgets:
         self.clipboard = ""
         self.history = []
         self.redo_stack = []
+        self.geometry_window = None
 
     def create_widgets(self):
         menubar = tk.Menu(self.viewer.root)
@@ -53,7 +55,7 @@ class Widgets:
         view_menu.add_checkbutton(label="Digitizing Tools Toolbar")
         view_menu.add_checkbutton(label="Checklist Guide Toolbar")
         view_menu.add_checkbutton(label="Curve Fitting Window")
-        view_menu.add_checkbutton(label="Geometry Window")
+        view_menu.add_checkbutton(label="Geometry Window", command=self.toggle_geometry_window)
         view_menu.add_checkbutton(label="Settings Views Toolbar")
         view_menu.add_checkbutton(label="Coordinate System Toolbar")
         view_menu.add_separator()
@@ -115,7 +117,7 @@ class Widgets:
         button_frame = tk.Frame(self.viewer.root)
         button_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
-        self.viewer.axis_button = tk.Button(button_frame, text="Place Axis", command=lambda: self.viewer.show_axis())
+        self.viewer.axis_button = tk.Button(button_frame, text="Place Axis", command=lambda: self.viewer.show_axis() )
         self.viewer.axis_button.pack(pady=5)
 
         self.viewer.set_axis_button = tk.Button(button_frame, text="Set Axis", command=lambda: self.viewer.set_axis())
@@ -139,14 +141,27 @@ class Widgets:
         self.viewer.current_curve_label = tk.Label(button_frame, text=f"Current Curve:{self.viewer.current_curve} ")
         self.viewer.current_curve_label.pack(pady=5, side=tk.BOTTOM)
 
-        # Create a canvas to display the image
-        self.viewer.canvas = tk.Canvas(self.viewer.root, bg="white", width=800, height=600)
+        # Create a PanedWindow to split the main area and the Geometry Window
+        self.paned_window = tk.PanedWindow(self.viewer.root, orient=tk.HORIZONTAL)
+        self.paned_window.pack(fill=tk.BOTH, expand=1)
+
+        # Create a frame for the main content and add it to the PanedWindow
+        self.main_frame = tk.Frame(self.paned_window)
+        self.paned_window.add(self.main_frame)
+
+        # Create a canvas to display the image in the main frame
+        self.viewer.canvas = tk.Canvas(self.main_frame, bg="white", width=800, height=600)
         self.viewer.canvas.pack(expand=True, fill=tk.BOTH)
         self.viewer.canvas.bind("<Button-1>", self.viewer.mouse_click)
         self.viewer.canvas.bind("<Button-3>", self.viewer.select_axis)
 
-        self.viewer.checklist = tk.Listbox(self.viewer.root, selectmode=tk.MULTIPLE)
-        self.viewer.checklist.pack(side=tk.BOTTOM, fill=tk.X, pady=10)
+    def toggle_geometry_window(self):
+        if self.geometry_window:
+            self.paned_window.forget(self.geometry_window.frame)
+            self.geometry_window = None
+        else:
+            self.geometry_window = GeometryWindow(self.paned_window)
+            self.paned_window.add(self.geometry_window.frame)
 
     def zoom_in(self):
         self.viewer.zoom_factor *= 1.2

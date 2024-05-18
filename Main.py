@@ -1,9 +1,23 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-
-import numpy as np
+from tkinter import ttk
 from PIL import Image, ImageTk
 from Widgets import Widgets
+from GeometryWindow import GeometryWindow
+
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from tkinter import ttk
+from PIL import Image, ImageTk
+from Widgets import Widgets
+from GeometryWindow import GeometryWindow
+
+
+def toggle_button_color(button, state):
+    if state:
+        button.config(bg='red')
+    else:
+        button.config(bg='SystemButtonFace')  # Default button color for most systems
 
 
 class ImageViewer:
@@ -11,9 +25,6 @@ class ImageViewer:
         self.show_all_curves_var = None
         self.show_selected_curve_var = None
         self.hide_all_curves_var = None
-        self.calculate_button = None
-        self.add_points_button = None
-        self.set_axis_button = None
         self.canvas = None
         self.root = _root
         self.root.title("Show Image")
@@ -23,7 +34,16 @@ class ImageViewer:
         self.image_original = None
         self.image_tk = None
 
+        self.axis_button_state = False
+        self.set_axis_button_state = False
+        self.add_points_button_state = False
+        self.calculate_button_state = False
+
         self.axis_button = None
+        self.set_axis_button = None
+        self.add_points_button = None
+        self.calculate_button = None
+
         self.axis_state = True
         self.axis_list = []
         self.value_list = []
@@ -47,114 +67,61 @@ class ImageViewer:
 
     @staticmethod
     def format_control(file_path):
-        # File format control
         if file_path.endswith(".jpg") or file_path.endswith(".jpeg") or file_path.endswith(".png"):
             return True
         return False
 
 
     def open_image(self):
-        # Select an image file
         file_path = filedialog.askopenfilename()
         if file_path:
             try:
-                # Open the image
                 self.image_original = Image.open(file_path)
                 if not self.format_control(file_path):
                     raise messagebox.showerror("Error", "Image format is not supported! Please select a valid image file.")
                 self.image_original = self.image_original.resize((800, 600), Image.Resampling.LANCZOS)
                 self.image_tk = ImageTk.PhotoImage(self.image_original)
 
-                # Delete all items on the canvas
                 self.canvas.delete("all")
-
                 self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image_tk)
 
             except (IOError, SyntaxError):
-                # Raise an error if the file is not a valid image file
                 raise messagebox.showerror("Error", "Image file is not valid! Please select a valid image file.")
 
     def mouse_click(self, event):
         if hasattr(self.root, "label"):
-            self.root.label.destroy()  # If the label exists, destroy it
+            self.root.label.destroy()
         self.root.label = tk.Label(self.root, text=f"X: {event.x}, Y: {event.y}")
         self.root.label.place(x=event.x, y=event.y)
         self.root.label.pack()
 
     def show_axis(self):
-        if self.axis_state:
+        self.axis_button_state = not self.axis_button_state
+        toggle_button_color(self.axis_button, self.axis_button_state)
+        if self.axis_button_state:
             self.root.config(cursor="crosshair")
             self.canvas.bind("<Button-1>", self.place_axis)
             self.canvas.bind("<Button-3>", self.delete_axis)
-
-            self.axis_state = False
         else:
             self.root.config(cursor="")
             self.canvas.bind("<Button-1>", self.mouse_click)
             self.canvas.bind("<Button-3>", self.select_axis)
-            self.axis_state = True
 
     def show_points(self):
-        if self.axis_state:
+        self.add_points_button_state = not self.add_points_button_state
+        toggle_button_color(self.add_points_button, self.add_points_button_state)
+        if self.add_points_button_state:
             self.root.config(cursor="dotbox")
             self.canvas.bind("<Button-1>", self.add_points)
             self.canvas.bind("<Button-3>", self.delete_point)
-            self.axis_state = False
         else:
             self.root.config(cursor="")
             self.canvas.bind("<Button-1>", self.mouse_click)
             self.canvas.bind("<Button-3>", self.select_axis)
-            self.axis_state = True
-
-    def place_axis(self, event):
-        if self.value_entered:
-            messagebox.showinfo("Info", "Please, Enter the value for the previous axis.")
-            return
-        if self.axis_counter == 3:
-            messagebox.showinfo("Info", "You can only add 4 axes.")
-            return
-
-        x, y = float(event.x), float(event.y)
-        self.canvas.create_line(x - 10, y, x + 10, y, fill="red", width=1)
-        self.canvas.create_line(x, y - 10, x, y + 10, fill="red", width=1)
-
-        value_text = f"X: {x}, Y: {y}"
-        self.canvas.create_text(x, y - 20, text=value_text, fill="blue")
-        self.axis_list.append((x, y))
-        self.axis_counter += 1
-        self.ask_value_for_axis(x, y)
-
-    def delete_axis(self, event):
-        if self.value_entered:
-            messagebox.showinfo("Info", "Please, Enter the value for the previous axis.")
-            return
-
-        x, y = event.x, event.y
-        for index, axis in enumerate(self.axis_list):
-            if axis[0] - 10 <= x <= axis[0] + 10 and axis[1] - 10 <= y <= axis[1] + 10:
-                self.axis_list.pop(index)
-                self.value_list.pop(index)
-                self.axis_counter -= 1
-                self.canvas.delete("all")
-                self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image_tk)
-                for i, _axis in enumerate(self.axis_list):
-                    self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
-                    self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
-                    self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
-                    self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
-                for i, _point in enumerate(self.points):
-                    self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
-                    point_text = f"X: {_point[0]}, Y: {_point[1]}"
-                    self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
-
-    def select_axis(self, event):
-        x, y = event.x, event.y
-        for index, axis in enumerate(self.axis_list):
-            if axis[0] - 10 <= x <= axis[0] + 10 and axis[1] - 10 <= y <= axis[1] + 10:
-                self.selected_axis = axis
-                break
 
     def set_axis(self):
+        self.set_axis_button_state = not self.set_axis_button_state
+        toggle_button_color(self.set_axis_button, self.set_axis_button_state)
         if not self.selected_axis:
             messagebox.showinfo("Error", "Please, Select a axis.")
             return
@@ -176,7 +143,6 @@ class ImageViewer:
         confirm_button.grid(row=2, column=0, columnspan=2, pady=10)
 
     def confirm_axis(self, window, x_entry, y_entry):
-        print(self.selected_axis)
         new_x = x_entry.get()
         new_y = y_entry.get()
 
@@ -215,7 +181,7 @@ class ImageViewer:
         self.axis_list.append((x, y))
         self.axis_counter += 1
         self.ask_value_for_axis(x, y)
-        window.destroy()  # Close the window
+        window.destroy()
 
     def ask_value_for_axis(self, x, y):
         self.value_entered = True
@@ -243,14 +209,12 @@ class ImageViewer:
         confirm_button.grid(row=4, column=0, columnspan=2, pady=10)
 
     def add_value_to_axis(self, value_x, value_y, x, y, value_window):
-        # If the value is not a digit, show an error message
         if value_x.isdigit() and value_y.isdigit():
             value_x = int(value_x)
             value_y = int(value_y)
             self.canvas.create_text(x, y + 10, text=f"value X: {value_x}, Y: {value_y}", fill="green")
             self.value_list.append((value_x, value_y))
-            print(self.value_list)
-            value_window.destroy()  # Close the window
+            value_window.destroy()
         else:
             messagebox.showerror("Error", "Please, Enter valid values for X and Y.")
         self.value_entered = False
@@ -331,6 +295,53 @@ class ImageViewer:
 
 
 
+    def place_axis(self, event):
+        if self.value_entered:
+            messagebox.showinfo("Info", "Please, Enter the value for the previous axis.")
+            return
+        if self.axis_counter == 3:
+            messagebox.showinfo("Info", "You can only add 4 axes.")
+            return
+
+        x, y = float(event.x), float(event.y)
+        self.canvas.create_line(x - 10, y, x + 10, y, fill="red", width=1)
+        self.canvas.create_line(x, y - 10, x, y + 10, fill="red", width=1)
+
+        value_text = f"X: {x}, Y: {y}"
+        self.canvas.create_text(x, y - 20, text=value_text, fill="blue")
+        self.axis_list.append((x, y))
+        self.axis_counter += 1
+        self.ask_value_for_axis(x, y)
+    def delete_axis(self, event):
+        if self.value_entered:
+            messagebox.showinfo("Info", "Please, Enter the value for the previous axis.")
+            return
+
+        x, y = event.x, event.y
+        for index, axis in enumerate(self.axis_list):
+            if axis[0] - 10 <= x <= axis[0] + 10 and axis[1] - 10 <= y <= axis[1] + 10:
+                self.axis_list.pop(index)
+                self.value_list.pop(index)
+                self.axis_counter -= 1
+                self.canvas.delete("all")
+                self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image_tk)
+                for i, _axis in enumerate(self.axis_list):
+                    self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
+                    self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
+                    self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
+                    self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
+                for i, _point in enumerate(self.points):
+                    self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
+                    point_text = f"X: {_point[0]}, Y: {_point[1]}"
+                    self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
+
+    def select_axis(self, event):
+        x, y = event.x, event.y
+        for index, axis in enumerate(self.axis_list):
+            if axis[0] - 10 <= x <= axis[0] + 10 and axis[1] - 10 <= y <= axis[1] + 10:
+                self.selected_axis = axis
+                break
+
     def delete_point(self, event):
         x, y = event.x, event.y
         for index, point in enumerate(self.points):
@@ -349,6 +360,9 @@ class ImageViewer:
                     self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
 
     def calculate_values(self):
+        self.calculate_button_state = not self.calculate_button_state
+        toggle_button_color(self.calculate_button, self.calculate_button_state)
+
         axis1 = self.axis_list[0]
         axis2 = self.axis_list[1]
         axis3 = self.axis_list[2]
@@ -389,7 +403,6 @@ class ImageViewer:
             self.point_values.append((x_value, y_value))
 
         print(self.point_values)
-
 
 
 
