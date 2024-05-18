@@ -57,6 +57,7 @@ class ImageViewer:
         self.curve_fitting_window = None
 
         self.checklist = None
+        self.grid_lines_visible = False
 
         self.widgets = Widgets(self)
         self.widgets.create_widgets()
@@ -89,7 +90,8 @@ class ImageViewer:
         elif image_type == "filtered":
             self.image_tk = ImageTk.PhotoImage(self.image_filtered)
         self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
-        self.draw_grid()
+        if self.grid_lines_visible:
+            self.draw_grid()
 
     def mouse_click(self, event):
         if hasattr(self.root, "label"):
@@ -429,7 +431,8 @@ class ImageViewer:
         self.canvas.delete("all")
         if self.image_tk:
             self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
-        self.draw_grid()
+        if self.grid_lines_visible:
+            self.draw_grid()
 
     def redraw_canvas(self):
         self.clear_canvas()

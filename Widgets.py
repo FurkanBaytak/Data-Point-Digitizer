@@ -125,8 +125,8 @@ class Widgets:
             self.paned_window.add(self.geometry_window.frame)
 
     def toggle_grid_lines(self):
-        self.grid_lines_visible = not getattr(self, 'grid_lines_visible', False)
-        if self.grid_lines_visible:
+        self.viewer.grid_lines_visible = not self.viewer.grid_lines_visible
+        if self.viewer.grid_lines_visible:
             self.viewer.draw_grid()
         else:
             self.viewer.canvas.delete('grid_line')
