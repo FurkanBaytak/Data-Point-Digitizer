@@ -27,8 +27,6 @@ class Widgets:
 
         # Edit menu
         edit_menu = tk.Menu(menubar, tearoff=0)
-        edit_menu.add_command(label="Undo", accelerator="Ctrl+Z", command=self.viewer.undo)
-        edit_menu.add_command(label="Redo", accelerator="Ctrl+Y", command=self.viewer.redo)
         edit_menu.add_separator()
         menubar.add_cascade(label="Edit", menu=edit_menu)
 

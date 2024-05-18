@@ -42,7 +42,6 @@ class ImageViewer:
         self.axis_counter = 0
         self.selected_axis = None
 
-        self.points = []
         self.point_values = []
 
         self.curves = [[], [], [], [], [], [], [], [], [], []]
@@ -177,7 +176,6 @@ class ImageViewer:
                 self.axis_list.pop(index)
                 self.value_list.pop(index)
                 self.axis_counter -= 1
-                self.save_state()  # Save state after deleting an axis
                 self.canvas.delete("all")
                 self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
                 for i, _axis in enumerate(self.axis_list):
@@ -194,7 +192,6 @@ class ImageViewer:
         self.canvas.create_text(x, y - 20, text=value_text, fill="blue")
         self.axis_list.append((x, y))
         self.axis_counter += 1
-        self.save_state()  # Save state after adding a new axis
         self.ask_value_for_axis(x, y)
         window.destroy()
 
@@ -224,16 +221,22 @@ class ImageViewer:
         confirm_button.grid(row=4, column=0, columnspan=2, pady=10)
 
     def add_value_to_axis(self, value_x, value_y, x, y, value_window):
-        if value_x.isdigit() and value_y.isdigit():
+        if self.is_integer(value_x) and self.is_integer(value_y):
             value_x = int(value_x)
             value_y = int(value_y)
             self.canvas.create_text(x, y + 10, text=f"value X: {value_x}, Y: {value_y}", fill="green")
             self.value_list.append((value_x, value_y))
             value_window.destroy()
-            self.save_state()  # Save state after adding value
         else:
-            messagebox.showerror("Error", "Please, Enter valid values for X and Y.")
+            messagebox.showerror("Error", "Please enter valid integer values for X and Y.")
         self.value_entered = False
+    @staticmethod
+    def is_integer(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
 
     def add_points(self, event):
         if self.axis_counter < 3:
@@ -244,7 +247,6 @@ class ImageViewer:
         point_text = f"X: {x}, Y: {y}"
         self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
         self.curves[self.current_curve-1].append((x, y))
-        self.save_state()  # Save state after adding points
 
     def switch_curve(self):
         switch_curve_window = tk.Toplevel(self.root)
@@ -264,16 +266,7 @@ class ImageViewer:
         self.canvas.delete("all")
         self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
         try:
-            for point in self.curves[curve-1]:
-                x, y = point
-                self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill="blue")
-                point_text = f"X: {x}, Y: {y}"
-                self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
-            for i, _axis in enumerate(self.axis_list):
-                self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
-                self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
-                self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
-                self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
+            self.redraw_canvas()
         except IndexError:
             print("Index Error")
             for i, _axis in enumerate(self.axis_list):
@@ -283,25 +276,27 @@ class ImageViewer:
                 self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
 
     def add_curve(self):
+        if self.last_ID == 10:
+            messagebox.showinfo("Info", "You can not add more than 10 curves.")
+            return
         self.last_ID += 1
         self.curve_IDs.append(self.last_ID)
-        self.save_state()  # Save state after adding a curve
 
     def delete_curve(self):
         if len(self.curve_IDs) == 1:
             messagebox.showinfo("Info", "You can not delete the last curve.")
             return
         self.curve_IDs.pop(self.current_curve-1)
+        self.last_ID -= 1
         for index, i in enumerate(self.curve_IDs):
             if i > self.current_curve:
                 self.curve_IDs[index] -= 1
 
-        self.curves.pop(self.current_curve-1)
+        self.curves[self.current_curve-1] = []
         if self.current_curve == 1:
             self.switch_curve_cont(2)
         else:
             self.switch_curve_cont(self.current_curve-1)
-        self.save_state()  # Save state after deleting a curve
 
     def place_axis(self, event):
         if self.value_entered:
@@ -319,7 +314,6 @@ class ImageViewer:
         self.canvas.create_text(x, y - 20, text=value_text, fill="blue")
         self.axis_list.append((x, y))
         self.axis_counter += 1
-        self.save_state()  # Save state after placing an axis
         self.ask_value_for_axis(x, y)
 
     def delete_axis(self, event):
@@ -333,18 +327,9 @@ class ImageViewer:
                 self.axis_list.pop(index)
                 self.value_list.pop(index)
                 self.axis_counter -= 1
-                self.save_state()  # Save state after deleting an axis
                 self.canvas.delete("all")
                 self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
-                for i, _axis in enumerate(self.axis_list):
-                    self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
-                    self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
-                    self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
-                    self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
-                for i, _point in enumerate(self.points):
-                    self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
-                    point_text = f"X: {_point[0]}, Y: {_point[1]}"
-                    self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
+                self.redraw_canvas()
 
     def select_axis(self, event):
         x, y = event.x, event.y
@@ -354,78 +339,71 @@ class ImageViewer:
                 break
 
     def delete_point(self, event):
+        print("delete point")
         x, y = event.x, event.y
-        for index, point in enumerate(self.points):
+        for index, point in enumerate(self.curves[self.current_curve-1]):
+            print(point)
             if point[0] - 2 <= x <= point[0] + 2 and point[1] - 2 <= y <= point[1] + 2:
-                self.points.pop(index)
+                self.curves[self.current_curve-1].pop(index)
                 self.canvas.delete("all")
                 self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
-                for i, _point in enumerate(self.points):
-                    self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
-                    point_text = f"X: {_point[0]}, Y: {_point[1]}"
-                    self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
-                for i, _axis in enumerate(self.axis_list):
-                    self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
-                    self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
-                    self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
-                    self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
-                self.save_state()  # Save state after deleting a point
+                self.redraw_canvas()
 
     def calculate_values(self):
-        self.reset_button_colors()
-        self.calculate_button_state = not self.calculate_button_state
-        toggle_button_color(self.calculate_button, self.calculate_button_state)
+        try:
+            self.reset_button_colors()
+            self.calculate_button_state = not self.calculate_button_state
+            toggle_button_color(self.calculate_button, self.calculate_button_state)
 
-        axis1 = self.axis_list[0]
-        axis2 = self.axis_list[1]
-        axis3 = self.axis_list[2]
+            axis1 = self.axis_list[0]
+            axis2 = self.axis_list[1]
+            axis3 = self.axis_list[2]
 
-        value1 = self.value_list[0]
-        value2 = self.value_list[1]
-        value3 = self.value_list[2]
+            value1 = self.value_list[0]
+            value2 = self.value_list[1]
+            value3 = self.value_list[2]
 
-        points = self.points
+            curves = self.curves
 
-        x_list = [axis1[0], axis2[0], axis3[0]]
-        y_list = [axis1[1], axis2[1], axis3[1]]
+            x_list = [axis1[0], axis2[0], axis3[0]]
+            y_list = [axis1[1], axis2[1], axis3[1]]
 
-        x_value_list = [value1[0], value2[0], value3[0]]
-        y_value_list = [value1[1], value2[1], value3[1]]
+            x_value_list = [value1[0], value2[0], value3[0]]
+            y_value_list = [value1[1], value2[1], value3[1]]
 
-        x_min = min(x_list)
-        x_max = max(x_list)
+            x_min = min(x_list)
+            x_max = max(x_list)
 
-        x_value_min = min(x_value_list)
-        x_value_max = max(x_value_list)
+            x_value_min = min(x_value_list)
+            x_value_max = max(x_value_list)
 
-        x_diff = abs(x_max) - abs(x_min)
+            x_diff = abs(x_max) - abs(x_min)
+            x_value_diff = x_value_max - x_value_min
 
-        x_value_diff = x_value_max - x_value_min
+            x_ratio = x_diff / x_value_diff
 
-        x_ratio = x_diff / x_value_diff
+            for i, curve in enumerate(curves):
+                for point in curve:
+                    x = point[0]
+                    y = point[1]
 
-        for point in points:
-            x = point[0]
-            y = point[1]
+                    x_value = (x - x_min) / x_ratio
+                    coeffs = np.polyfit(y_list, y_value_list, 1)
+                    y_value = coeffs[0] * y + coeffs[1]
 
-            x_value = (x - x_min) / x_ratio
+                    self.point_values.append((x_value, y_value))
 
-            coeffs = np.polyfit(y_list, y_value_list, 1)
-            y_value = coeffs[0] * y + coeffs[1]
+                if not self.curves[i]:
+                    continue
+                else:
+                    print("Curve", i+1)
+                    print(self.point_values)
+                    self.point_values.clear()
+        except:
+            messagebox.showinfo("Info", "Please, Add 3 axis and at least 1 point to calculate values.")
+            return
 
-            self.point_values.append((x_value, y_value))
 
-        print(self.point_values)
-
-    def save_state(self):
-        state = (self.axis_list.copy(), self.value_list.copy())
-        self.history.append(state)
-        self.redo_stack.clear()  # Clear the redo stack after a new state is saved
-
-    def restore_state(self, state):
-        self.axis_list, self.value_list = state
-        self.axis_counter = len(self.axis_list)
-        self.redraw_canvas()
 
     def clear_canvas(self):
         self.canvas.delete("all")
@@ -441,24 +419,11 @@ class ImageViewer:
             self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
             self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
             self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
-        for i, _point in enumerate(self.points):
+        for i, _point in enumerate(self.curves[self.current_curve-1]):
             self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
             point_text = f"X: {_point[0]}, Y: {_point[1]}"
             self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
 
-    def undo(self):
-        if len(self.history) > 1:
-            self.redo_stack.append(self.history.pop())
-            self.restore_state(self.history[-1])
-        elif self.history:
-            self.redo_stack.append(self.history.pop())
-            self.clear_canvas()
-
-    def redo(self):
-        if self.redo_stack:
-            state = self.redo_stack.pop()
-            self.history.append(state)
-            self.restore_state(state)
 
     def toggle_geometry_window(self):
         if self.geometry_window:
