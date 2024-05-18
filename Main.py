@@ -34,6 +34,12 @@ class ImageViewer:
         self.points = []
         self.point_values = []
 
+        self.curves = [[], [], [], [], [], [], [], [], [], []]
+        self.current_curve = 1  # Default curve
+        self.curve_IDs = [1]
+        self.last_ID = 1
+
+
         self.checklist = None
 
         self.widgets = Widgets(self)
@@ -45,6 +51,7 @@ class ImageViewer:
         if file_path.endswith(".jpg") or file_path.endswith(".jpeg") or file_path.endswith(".png"):
             return True
         return False
+
 
     def open_image(self):
         # Select an image file
@@ -253,10 +260,76 @@ class ImageViewer:
             messagebox.showinfo("Info", "Please, Add at least 3 axis to add points.")
             return
         x, y = event.x, event.y
-        self.points.append((x, y))
         self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill="blue")
         point_text = f"X: {x}, Y: {y}"
         self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
+        #pointleri current curve ekle
+        self.curves[self.current_curve-1].append((x, y))
+
+
+    def switch_curve(self):
+        switch_curve_window = tk.Toplevel(self.root)
+        switch_curve_window.title("Switch Curve")
+        # Create a listbox to show the curves
+        listbox = tk.Listbox(switch_curve_window, selectmode=tk.SINGLE)
+        for curve in self.curve_IDs:
+            listbox.insert(tk.END, f"Curve {curve}")
+        listbox.pack()
+
+        #curveden sonraki int değeri al
+
+        switch_button = tk.Button(switch_curve_window, text="Switch", command=lambda: self.switch_curve_cont(int(listbox.get(tk.ACTIVE).split()[1])))
+        switch_button.pack()
+
+
+    def switch_curve_cont(self, curve):
+        print(curve)
+        print(len(self.curves))
+        self.current_curve = curve
+        self.widgets.set_current_curve(self.current_curve)
+        self.canvas.delete("all")
+        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image_tk)
+        try:
+            for point in self.curves[curve-1]:
+                x, y = point
+                self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill="blue")
+                point_text = f"X: {x}, Y: {y}"
+                self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
+            for i, _axis in enumerate(self.axis_list):
+                self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
+                self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
+                self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
+                self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
+        except IndexError:
+            print("Index Error")
+            for i, _axis in enumerate(self.axis_list):
+                self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
+                self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
+                self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
+                self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
+
+    def add_curve(self):
+        self.last_ID += 1
+        self.curve_IDs.append(self.last_ID)
+
+    def delete_curve(self):
+        if len(self.curve_IDs) == 1:
+            messagebox.showinfo("Info", "You can not delete the last curve.")
+            return
+        self.curve_IDs.pop(self.current_curve-1)
+        for index, i in enumerate(self.curve_IDs):
+            if i > self.current_curve:
+                self.curve_IDs[index] -= 1
+
+        self.curves.pop(self.current_curve-1)
+        if self.current_curve == 1:
+            self.switch_curve_cont(2)
+        else:
+            self.switch_curve_cont(self.current_curve-1)
+
+
+
+
 
     def delete_point(self, event):
         x, y = event.x, event.y
@@ -316,6 +389,8 @@ class ImageViewer:
             self.point_values.append((x_value, y_value))
 
         print(self.point_values)
+
+
 
 
 if __name__ == "__main__":

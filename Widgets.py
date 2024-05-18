@@ -127,6 +127,18 @@ class Widgets:
         self.viewer.calculate_button = tk.Button(button_frame, text="Calculate", command=lambda: self.viewer.calculate_values())
         self.viewer.calculate_button.pack(pady=5)
 
+        self.viewer.switch_curve_button = tk.Button(button_frame, text="Switch Curve", command=lambda: self.viewer.switch_curve())
+        self.viewer.switch_curve_button.pack(pady=5, side=tk.BOTTOM)
+
+        self.viewer.add_curve_button = tk.Button(button_frame, text="Add Curve", command=lambda: self.viewer.add_curve())
+        self.viewer.add_curve_button.pack(pady=5, side=tk.BOTTOM)
+
+        self.viewer.delete_curve_button = tk.Button(button_frame, text="Delete Curve", command=lambda: self.viewer.delete_curve())
+        self.viewer.delete_curve_button.pack(pady=5, side=tk.BOTTOM)
+
+        self.viewer.current_curve_label = tk.Label(button_frame, text=f"Current Curve:{self.viewer.current_curve} ")
+        self.viewer.current_curve_label.pack(pady=5, side=tk.BOTTOM)
+
         # Create a canvas to display the image
         self.viewer.canvas = tk.Canvas(self.viewer.root, bg="white", width=800, height=600)
         self.viewer.canvas.pack(expand=True, fill=tk.BOTH)
@@ -255,3 +267,7 @@ class Widgets:
 
     def clear_canvas(self):
         self.viewer.canvas.delete("all")
+
+
+    def set_current_curve(self, curve):
+        self.viewer.current_curve_label.config(text=f"Current Curve: {curve}")
