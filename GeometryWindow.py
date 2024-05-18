@@ -1,8 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
 from tkinter import ttk
-from PIL import Image, ImageTk
-
 
 class GeometryWindow:
     def __init__(self, parent):
