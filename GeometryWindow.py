@@ -1,13 +1,15 @@
 import tkinter as tk
 from tkinter import ttk
 
+
 class GeometryWindow:
     def __init__(self, parent):
         self.frame = tk.Frame(parent)
         self.label = tk.Label(self.frame, text="Geometry Window", bg="lightgrey")
         self.label.pack(side=tk.TOP, fill=tk.X)
 
-        self.tree = ttk.Treeview(self.frame, columns=("X", "Y", "Index", "Distance"), show="headings")
+        self.tree = ttk.Treeview(self.frame, columns=("Curve", "X", "Y", "Index", "Distance"), show="headings")
+        self.tree.heading("Curve", text="Curve")
         self.tree.heading("X", text="X")
         self.tree.heading("Y", text="Y")
         self.tree.heading("Index", text="Index")

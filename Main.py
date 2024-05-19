@@ -1,14 +1,15 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from tkinter import ttk
 from PIL import Image, ImageTk
 import numpy as np
 from Widgets import Widgets
 from GeometryWindow import GeometryWindow
 from CurveFittingWindow import CurveFittingWindow
 
+
 def toggle_button_color(button, state):
     button.config(bg='red' if state else 'SystemButtonFace')
+
 
 class ImageViewer:
     def __init__(self, _root):
@@ -72,7 +73,8 @@ class ImageViewer:
             try:
                 self.image_original = Image.open(file_path)
                 if not self.format_control(file_path):
-                    raise messagebox.showerror("Error", "Image format is not supported! Please select a valid image file.")
+                    raise messagebox.showerror("Error", "Image format is not supported!"
+                                                        " Please select a valid image file.")
                 self.image_original = self.image_original.resize((800, 600), Image.Resampling.LANCZOS)
                 self.image_tk = ImageTk.PhotoImage(self.image_original)
                 self.image_filtered = self.image_original.convert('L').point(lambda x: 0 if x < 128 else 255, '1')
@@ -88,7 +90,8 @@ class ImageViewer:
             self.image_tk = ImageTk.PhotoImage(self.image_original)
         elif image_type == "filtered":
             self.image_tk = ImageTk.PhotoImage(self.image_filtered)
-        self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
+        self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER,
+                                 image=self.image_tk)
         if self.grid_lines_visible:
             self.draw_grid()
 
@@ -151,7 +154,8 @@ class ImageViewer:
         y_entry = tk.Entry(set_axis_window)
         y_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        confirm_button = tk.Button(set_axis_window, text="Confirm", command=lambda: self.confirm_axis(set_axis_window, x_entry, y_entry))
+        confirm_button = tk.Button(set_axis_window, text="Confirm", command=lambda: self.confirm_axis(set_axis_window,
+                                                                                                      x_entry, y_entry))
         confirm_button.grid(row=2, column=0, columnspan=2, pady=10)
 
     def confirm_axis(self, window, x_entry, y_entry):
@@ -177,7 +181,8 @@ class ImageViewer:
                 self.value_list.pop(index)
                 self.axis_counter -= 1
                 self.canvas.delete("all")
-                self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
+                self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2,
+                                         anchor=tk.CENTER, image=self.image_tk)
                 for i, _axis in enumerate(self.axis_list):
                     self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
                     self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
@@ -217,8 +222,20 @@ class ImageViewer:
         value_y_entry = tk.Entry(value_window)
         value_y_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        confirm_button = tk.Button(value_window, text="Add Value", command=lambda: self.add_value_to_axis(value_x_entry.get(), value_y_entry.get(), x, y, value_window))
+        confirm_button = tk.Button(value_window, text="Add Value", command=lambda: self.add_value_to_axis(value_x_entry.
+                                                                                                          get(),
+                                                                                                          value_y_entry.
+                                                                                                          get(), x, y,
+                                                                                                          value_window))
         confirm_button.grid(row=4, column=0, columnspan=2, pady=10)
+        value_window.protocol("WM_DELETE_WINDOW",
+                              lambda: self.protocol_func(value_window))
+
+    def protocol_func(self, window):
+        self.axis_list.pop()
+        self.axis_counter -= 1
+        self.value_entered = False
+        window.destroy()
 
     def add_value_to_axis(self, value_x, value_y, x, y, value_window):
         if self.is_integer(value_x) and self.is_integer(value_y):
@@ -230,6 +247,7 @@ class ImageViewer:
         else:
             messagebox.showerror("Error", "Please enter valid integer values for X and Y.")
         self.value_entered = False
+
     @staticmethod
     def is_integer(s):
         try:
@@ -246,7 +264,7 @@ class ImageViewer:
         self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill="blue")
         point_text = f"X: {x}, Y: {y}"
         self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
-        self.curves[self.current_curve-1].append((x, y))
+        self.curves[self.current_curve - 1].append((x, y))
 
     def switch_curve(self):
         switch_curve_window = tk.Toplevel(self.root)
@@ -257,14 +275,16 @@ class ImageViewer:
             listbox.insert(tk.END, f"Curve {curve}")
         listbox.pack()
 
-        switch_button = tk.Button(switch_curve_window, text="Switch", command=lambda: self.switch_curve_cont(int(listbox.get(tk.ACTIVE).split()[1])))
+        switch_button = tk.Button(switch_curve_window, text="Switch",
+                                  command=lambda: self.switch_curve_cont(int(listbox.get(tk.ACTIVE).split()[1])))
         switch_button.pack()
 
     def switch_curve_cont(self, curve):
         self.current_curve = curve
         self.widgets.set_current_curve(self.current_curve)
         self.canvas.delete("all")
-        self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
+        self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER,
+                                 image=self.image_tk)
         try:
             self.redraw_canvas()
         except IndexError:
@@ -286,24 +306,24 @@ class ImageViewer:
         if len(self.curve_IDs) == 1:
             messagebox.showinfo("Info", "You can not delete the last curve.")
             return
-        self.curve_IDs.pop(self.current_curve-1)
+        self.curve_IDs.pop(self.current_curve - 1)
         self.last_ID -= 1
         for index, i in enumerate(self.curve_IDs):
             if i > self.current_curve:
                 self.curve_IDs[index] -= 1
 
-        self.curves[self.current_curve-1] = []
+        self.curves[self.current_curve - 1] = []
         if self.current_curve == 1:
             self.switch_curve_cont(2)
         else:
-            self.switch_curve_cont(self.current_curve-1)
+            self.switch_curve_cont(self.current_curve - 1)
 
     def place_axis(self, event):
         if self.value_entered:
             messagebox.showinfo("Info", "Please, Enter the value for the previous axis.")
             return
         if self.axis_counter == 3:
-            messagebox.showinfo("Info", "You can only add 4 axes.")
+            messagebox.showinfo("Info", "You can only add 3 axes.")
             return
 
         x, y = float(event.x), float(event.y)
@@ -328,7 +348,8 @@ class ImageViewer:
                 self.value_list.pop(index)
                 self.axis_counter -= 1
                 self.canvas.delete("all")
-                self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
+                self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2,
+                                         anchor=tk.CENTER, image=self.image_tk)
                 self.redraw_canvas()
 
     def select_axis(self, event):
@@ -341,12 +362,13 @@ class ImageViewer:
     def delete_point(self, event):
         print("delete point")
         x, y = event.x, event.y
-        for index, point in enumerate(self.curves[self.current_curve-1]):
+        for index, point in enumerate(self.curves[self.current_curve - 1]):
             print(point)
             if point[0] - 2 <= x <= point[0] + 2 and point[1] - 2 <= y <= point[1] + 2:
-                self.curves[self.current_curve-1].pop(index)
+                self.curves[self.current_curve - 1].pop(index)
                 self.canvas.delete("all")
-                self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
+                self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2,
+                                         anchor=tk.CENTER, image=self.image_tk)
                 self.redraw_canvas()
 
     def calculate_values(self):
@@ -396,19 +418,18 @@ class ImageViewer:
                 if not self.curves[i]:
                     continue
                 else:
-                    print("Curve", i+1)
+                    print("Curve", i + 1)
                     print(self.point_values)
                     self.point_values.clear()
-        except:
+        except IndexError:
             messagebox.showinfo("Info", "Please, Add 3 axis and at least 1 point to calculate values.")
             return
-
-
 
     def clear_canvas(self):
         self.canvas.delete("all")
         if self.image_tk:
-            self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER, image=self.image_tk)
+            self.canvas.create_image(self.canvas.winfo_width() // 2, self.canvas.winfo_height() // 2, anchor=tk.CENTER,
+                                     image=self.image_tk)
         if self.grid_lines_visible:
             self.draw_grid()
 
@@ -419,11 +440,10 @@ class ImageViewer:
             self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
             self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
             self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
-        for i, _point in enumerate(self.curves[self.current_curve-1]):
+        for i, _point in enumerate(self.curves[self.current_curve - 1]):
             self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
             point_text = f"X: {_point[0]}, Y: {_point[1]}"
             self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
-
 
     def toggle_geometry_window(self):
         if self.geometry_window:
@@ -461,13 +481,16 @@ class ImageViewer:
         x_offset = (canvas_width - image_width) // 2
         y_offset = (canvas_height - image_height) // 2
         for i in range(0, image_width, image_width // 5):
-            self.canvas.create_line([(i + x_offset, y_offset), (i + x_offset, y_offset + image_height)], tag='grid_line', fill='gray')
+            self.canvas.create_line([(i + x_offset, y_offset), (i + x_offset, y_offset + image_height)],
+                                    tag='grid_line', fill='gray')
         for i in range(0, image_height, image_height // 5):
-            self.canvas.create_line([(x_offset, i + y_offset), (x_offset + image_width, i + y_offset)], tag='grid_line', fill='gray')
+            self.canvas.create_line([(x_offset, i + y_offset), (x_offset + image_width, i + y_offset)], tag='grid_line',
+                                    fill='gray')
 
     def on_resize(self, event):
         self.canvas.config(width=event.width, height=event.height)
         self.redraw_canvas()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
