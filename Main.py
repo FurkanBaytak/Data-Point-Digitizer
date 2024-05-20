@@ -265,6 +265,29 @@ class ImageViewer:
         point_text = f"X: {x}, Y: {y}"
         self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
         self.curves[self.current_curve - 1].append((x, y))
+        self.draw_curve_line()
+
+    def draw_curve_line(self, degree=2):
+        self.redraw_canvas(1)
+        print("draw curve")
+        print(self.curves[self.current_curve - 1])
+        x_list = [self.curves[self.current_curve - 1][i][0] for i in range(len(self.curves[self.current_curve - 1]))]
+        print(x_list)
+        y_list = [self.curves[self.current_curve - 1][i][1] for i in range(len(self.curves[self.current_curve - 1]))]
+        print(y_list)
+        if len(x_list) < 2:
+            return
+
+        for i in range(len(x_list) - 1):
+            x1 = min(x_list)
+            y1 = y_list[x_list.index(x1)]
+            y_list.remove(y1)
+            print(x1, y1)
+            x_list.remove(x1)
+            x2 = min(x_list)
+            y2 = y_list[x_list.index(x2)]
+
+            self.canvas.create_line(x1, y1, x2, y2, fill="purple", width=2)
 
     def switch_curve(self):
         switch_curve_window = tk.Toplevel(self.root)
@@ -433,17 +456,29 @@ class ImageViewer:
         if self.grid_lines_visible:
             self.draw_grid()
 
-    def redraw_canvas(self):
+    def redraw_canvas(self, n=0):
         self.clear_canvas()
-        for i, _axis in enumerate(self.axis_list):
-            self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
-            self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
-            self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
-            self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
-        for i, _point in enumerate(self.curves[self.current_curve - 1]):
-            self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
-            point_text = f"X: {_point[0]}, Y: {_point[1]}"
-            self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
+        if n == 0:
+            for i, _axis in enumerate(self.axis_list):
+                self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
+                self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
+                self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
+                self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
+            for i, _point in enumerate(self.curves[self.current_curve - 1]):
+                self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
+                point_text = f"X: {_point[0]}, Y: {_point[1]}"
+                self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
+            self.draw_curve_line()
+        if n == 1:
+            for i, _axis in enumerate(self.axis_list):
+                self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
+                self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
+                self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
+                self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
+            for i, _point in enumerate(self.curves[self.current_curve - 1]):
+                self.canvas.create_oval(_point[0] - 2, _point[1] - 2, _point[0] + 2, _point[1] + 2, fill="blue")
+                point_text = f"X: {_point[0]}, Y: {_point[1]}"
+                self.canvas.create_text(_point[0], _point[1] - 20, text=point_text, fill="purple")
 
     def toggle_geometry_window(self):
         if self.geometry_window:
