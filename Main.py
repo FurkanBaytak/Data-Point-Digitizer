@@ -5,6 +5,8 @@ import numpy as np
 from Widgets import Widgets
 from GeometryWindow import GeometryWindow
 from CurveFittingWindow import CurveFittingWindow
+from CurveSettingsWindow import CurveSettingsWindow
+import pandas as pd
 
 
 def toggle_button_color(button, state):
@@ -13,6 +15,10 @@ def toggle_button_color(button, state):
 
 class ImageViewer:
     def __init__(self, _root):
+        self.CurveSettingsWindow = CurveSettingsWindow(self)
+        self.color = "blue"  # Default color
+        self.size = 1
+        self.data_table = None
         self.show_all_curves_var = None
         self.show_selected_curve_var = None
         self.hide_all_curves_var = None
@@ -44,6 +50,7 @@ class ImageViewer:
         self.selected_axis = None
 
         self.point_values = []
+        self.data_values = []
 
         self.curves = [[], [], [], [], [], [], [], [], [], []]
         self.current_curve = 1  # Default curve
@@ -267,7 +274,7 @@ class ImageViewer:
         self.curves[self.current_curve - 1].append((x, y))
         self.draw_curve_line()
 
-    def draw_curve_line(self, degree=2):
+    def draw_curve_line(self):
         self.redraw_canvas(1)
         print("draw curve")
         print(self.curves[self.current_curve - 1])
@@ -286,8 +293,7 @@ class ImageViewer:
             x_list.remove(x1)
             x2 = min(x_list)
             y2 = y_list[x_list.index(x2)]
-
-            self.canvas.create_line(x1, y1, x2, y2, fill="purple", width=2)
+            self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
 
     def switch_curve(self):
         switch_curve_window = tk.Toplevel(self.root)
@@ -396,6 +402,7 @@ class ImageViewer:
 
     def calculate_values(self):
         try:
+            self.data_values.clear()
             self.reset_button_colors()
             self.calculate_button_state = not self.calculate_button_state
             toggle_button_color(self.calculate_button, self.calculate_button_state)
@@ -437,13 +444,18 @@ class ImageViewer:
                     y_value = coeffs[0] * y + coeffs[1]
 
                     self.point_values.append((x_value, y_value))
-
                 if not self.curves[i]:
                     continue
                 else:
+                    values = []
+                    for j, point in enumerate(self.point_values):
+                        values.append([float(f"{point[0]:.2f}"), float(f"{point[1]:.2f}")])
+                    self.data_values.append(values)
+                    print("values", self.data_values)
                     print("Curve", i + 1)
                     print(self.point_values)
                     self.point_values.clear()
+            self.data_table = self.create_data_table()
         except IndexError:
             messagebox.showinfo("Info", "Please, Add 3 axis and at least 1 point to calculate values.")
             return
@@ -485,7 +497,7 @@ class ImageViewer:
             self.widgets.paned_window.forget(self.geometry_window.frame)
             self.geometry_window = None
         else:
-            self.geometry_window = GeometryWindow(self.widgets.paned_window)
+            self.geometry_window = GeometryWindow(self.widgets.paned_window, self)
             self.widgets.paned_window.add(self.geometry_window.frame)
 
     def toggle_curve_fitting_window(self):
@@ -525,6 +537,23 @@ class ImageViewer:
     def on_resize(self, event):
         self.canvas.config(width=event.width, height=event.height)
         self.redraw_canvas()
+
+    def create_data_table(self):
+        data = []
+        for i, curve in enumerate(self.data_values):
+            for j, point in enumerate(curve):
+                data.append([i + 1, f"point {j + 1}", point[0], point[1]])
+
+        data_table = pd.DataFrame(data, columns=["Curve", "Point", "X", "Y"])
+        return data_table
+
+    def export_data(self):
+        if self.data_table is None:
+            messagebox.showinfo("Info", "Please, Calculate values to export data.")
+            return
+        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        if file_path:
+            self.data_table.to_csv(file_path, index=False)
 
 
 if __name__ == "__main__":

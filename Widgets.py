@@ -1,13 +1,15 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
-from tkinter import ttk
 from PIL import Image, ImageTk
 from GeometryWindow import GeometryWindow
-from CurveFittingWindow import CurveFittingWindow
-from CurveListWindow import CurveListWindow
+from CurveSettingsWindow import CurveSettingsWindow
+
 
 class Widgets:
     def __init__(self, viewer):
+        self.main_frame = None
+        self.background_var = None
+        self.curves_var = None
+        self.paned_window = None
         self.viewer = viewer
         self.clipboard = ""
         self.history = []
@@ -23,6 +25,8 @@ class Widgets:
         file_menu.add_command(label="Open Image", command=self.viewer.open_image)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.viewer.root.quit)
+        file_menu.add_separator()
+        file_menu.add_command(label="export", command=self.viewer.export_data)
         menubar.add_cascade(label="File", menu=file_menu)
 
         # Edit menu
@@ -51,9 +55,12 @@ class Widgets:
         # Background submenu
         self.background_var = tk.IntVar()
         background_menu = tk.Menu(view_menu, tearoff=0)
-        background_menu.add_radiobutton(label="No Background", variable=self.background_var, value=0, command=self.viewer.hide_image)
-        background_menu.add_radiobutton(label="Show Original Image", variable=self.background_var, value=1, command=self.viewer.show_original_image)
-        background_menu.add_radiobutton(label="Show Filtered Image", variable=self.background_var, value=2, command=self.viewer.show_filtered_image)
+        background_menu.add_radiobutton(label="No Background", variable=self.background_var, value=0,
+                                        command=self.viewer.hide_image)
+        background_menu.add_radiobutton(label="Show Original Image", variable=self.background_var, value=1,
+                                        command=self.viewer.show_original_image)
+        background_menu.add_radiobutton(label="Show Filtered Image", variable=self.background_var, value=2,
+                                        command=self.viewer.show_filtered_image)
         view_menu.add_cascade(label="Background", menu=background_menu)
 
         # Curves submenu
@@ -67,7 +74,7 @@ class Widgets:
 
         # Settings menu
         settings_menu = tk.Menu(menubar, tearoff=0)
-        settings_menu.add_command(label="Curve List", command=self.show_curve_list)
+        settings_menu.add_command(label="Curve Settings", command=self.curve_settings)
         menubar.add_cascade(label="Settings", menu=settings_menu)
 
         self.viewer.root.config(menu=menubar)
@@ -82,19 +89,24 @@ class Widgets:
         self.viewer.set_axis_button = tk.Button(button_frame, text="Set Axis", command=lambda: self.viewer.set_axis())
         self.viewer.set_axis_button.pack(pady=5)
 
-        self.viewer.add_points_button = tk.Button(button_frame, text="Add Points", command=lambda: self.viewer.show_points())
+        self.viewer.add_points_button = tk.Button(button_frame, text="Add Points",
+                                                  command=lambda: self.viewer.show_points())
         self.viewer.add_points_button.pack(pady=5)
 
-        self.viewer.calculate_button = tk.Button(button_frame, text="Calculate", command=lambda: self.viewer.calculate_values())
+        self.viewer.calculate_button = tk.Button(button_frame, text="Calculate",
+                                                 command=lambda: self.viewer.calculate_values())
         self.viewer.calculate_button.pack(pady=5)
 
-        self.viewer.switch_curve_button = tk.Button(button_frame, text="Switch Curve", command=lambda: self.viewer.switch_curve())
+        self.viewer.switch_curve_button = tk.Button(button_frame, text="Switch Curve",
+                                                    command=lambda: self.viewer.switch_curve())
         self.viewer.switch_curve_button.pack(pady=5, side=tk.BOTTOM)
 
-        self.viewer.add_curve_button = tk.Button(button_frame, text="Add Curve", command=lambda: self.viewer.add_curve())
+        self.viewer.add_curve_button = tk.Button(button_frame, text="Add Curve",
+                                                 command=lambda: self.viewer.add_curve())
         self.viewer.add_curve_button.pack(pady=5, side=tk.BOTTOM)
 
-        self.viewer.delete_curve_button = tk.Button(button_frame, text="Delete Curve", command=lambda: self.viewer.delete_curve())
+        self.viewer.delete_curve_button = tk.Button(button_frame, text="Delete Curve",
+                                                    command=lambda: self.viewer.delete_curve())
         self.viewer.delete_curve_button.pack(pady=5, side=tk.BOTTOM)
 
         self.viewer.current_curve_label = tk.Label(button_frame, text=f"Current Curve: {self.viewer.current_curve} ")
@@ -119,7 +131,7 @@ class Widgets:
             self.paned_window.forget(self.geometry_window.frame)
             self.geometry_window = None
         else:
-            self.geometry_window = GeometryWindow(self.paned_window)
+            self.geometry_window = GeometryWindow(self.paned_window, self.viewer)
             self.paned_window.add(self.geometry_window.frame)
 
     def toggle_grid_lines(self):
@@ -129,8 +141,8 @@ class Widgets:
         else:
             self.viewer.canvas.delete('grid_line')
 
-    def show_curve_list(self):
-        CurveListWindow(self.viewer.root)
+    def curve_settings(self):
+        CurveSettingsWindow(self.viewer).open_settings_window()
 
     def zoom_in(self):
         self.viewer.zoom_factor *= 1.2
