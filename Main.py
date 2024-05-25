@@ -6,6 +6,7 @@ from Widgets import Widgets
 from GeometryWindow import GeometryWindow
 from CurveFittingWindow import CurveFittingWindow
 from CurveSettingsWindow import CurveSettingsWindow
+from scipy.interpolate import make_interp_spline, interp1d
 import pandas as pd
 
 
@@ -65,6 +66,8 @@ class ImageViewer:
 
         self.checklist = None
         self.grid_lines_visible = False
+        self.grid_size_x = 5
+        self.grid_size_y = 5
 
         self.widgets = Widgets(self)
         self.widgets.create_widgets()
@@ -235,6 +238,7 @@ class ImageViewer:
                                                                                                           get(), x, y,
                                                                                                           value_window))
         confirm_button.grid(row=4, column=0, columnspan=2, pady=10)
+
         value_window.protocol("WM_DELETE_WINDOW",
                               lambda: self.protocol_func(value_window))
 
@@ -245,11 +249,17 @@ class ImageViewer:
         window.destroy()
 
     def add_value_to_axis(self, value_x, value_y, x, y, value_window):
+        if self.check_axis(int(value_x), int(value_y)):
+            messagebox.showinfo("Info", "3 points must not be on the same line.")
+            return
         if self.is_integer(value_x) and self.is_integer(value_y):
             value_x = int(value_x)
             value_y = int(value_y)
             self.canvas.create_text(x, y + 10, text=f"value X: {value_x}, Y: {value_y}", fill="green")
             self.value_list.append((value_x, value_y))
+
+
+
             value_window.destroy()
         else:
             messagebox.showerror("Error", "Please enter valid integer values for X and Y.")
@@ -263,6 +273,7 @@ class ImageViewer:
         except ValueError:
             return False
 
+
     def add_points(self, event):
         if self.axis_counter < 3:
             messagebox.showinfo("Info", "Please, Add at least 3 axis to add points.")
@@ -274,26 +285,104 @@ class ImageViewer:
         self.curves[self.current_curve - 1].append((x, y))
         self.draw_curve_line()
 
+    from scipy.interpolate import interp1d, make_interp_spline
+
+    from scipy.interpolate import interp1d, make_interp_spline
+
+    import numpy as np
+    from scipy.interpolate import make_interp_spline
+
     def draw_curve_line(self):
         self.redraw_canvas(1)
         print("draw curve")
         print(self.curves[self.current_curve - 1])
+
+        # x_list ve y_list oluşturma
         x_list = [self.curves[self.current_curve - 1][i][0] for i in range(len(self.curves[self.current_curve - 1]))]
         print(x_list)
         y_list = [self.curves[self.current_curve - 1][i][1] for i in range(len(self.curves[self.current_curve - 1]))]
         print(y_list)
+
         if len(x_list) < 2:
             return
 
-        for i in range(len(x_list) - 1):
-            x1 = min(x_list)
-            y1 = y_list[x_list.index(x1)]
-            y_list.remove(y1)
-            print(x1, y1)
-            x_list.remove(x1)
-            x2 = min(x_list)
-            y2 = y_list[x_list.index(x2)]
-            self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
+        # Aynı x değerine sahip noktaları ayırmak için küçük bir offset ekleyelim
+        x_list = np.array(x_list)
+        y_list = np.array(y_list)
+
+
+
+        # x_list ve y_list'i x_list'e göre sırala
+        sorted_indices = np.argsort(x_list)
+        x_list = x_list[sorted_indices]
+        y_list = y_list[sorted_indices]
+
+
+        if len(x_list) < 4:
+            # Daha az nokta olduğunda doğrusal enterpolasyon kullan
+            for i in range(len(x_list) - 1):
+                x1, y1 = x_list[i], y_list[i]
+                x2, y2 = x_list[i + 1], y_list[i + 1]
+                self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
+        else:
+            # Tüm noktalar için spline enterpolasyonu uygula
+            x_array = np.array(x_list)
+            y_array = np.array(y_list)
+
+            try:
+
+                x_list1 = []
+                y_list1 = []
+                x_list2 = []
+                y_list2 = []
+                split_index = -1
+                for i in range(len(x_array) - 1):
+                    if abs(x_array[i] - x_array[i + 1]) <= 2:
+                        split_index = i+1
+                        break
+                if split_index != -1:
+                    x_list1 = np.array(x_array[:split_index])
+                    y_list1 = np.array(y_array[:split_index])
+                    x_list2 = np.array(x_array[split_index:])
+                    y_list2 = np.array(y_array[split_index:])
+                else:
+                    x_list1 = np.array(x_array)
+                    y_list1 = np.array(y_array)
+                xnew = np.linspace(x_list1.min(), x_list1.max(), 100)
+                ynew = make_interp_spline(x_list1, y_list1, k=2)(xnew)
+                for i in range(len(xnew) - 1):
+                    x1, y1 = xnew[i], ynew[i]
+                    x2, y2 = xnew[i + 1], ynew[i + 1]
+                    self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
+
+                if len(x_list2) == 0:
+                    return
+
+                self.canvas.create_line(x_list1[-1], y_list1[-1], x_list2[0], y_list2[0], fill=self.color,
+                                        width=self.size, dash=(4, 4))
+
+
+                if len(x_list2) < 4:
+                    for i in range(len(x_list2) - 1):
+                        x1, y1 = x_list2[i], y_list2[i]
+                        x2, y2 = x_list2[i + 1], y_list2[i + 1]
+                        self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
+                else:
+                    xnew = np.linspace(x_list2.min(), x_list2.max(), 100)
+                    ynew = make_interp_spline(x_list2, y_list2, k=2)(xnew)
+                    for i in range(len(xnew) - 1):
+                        x1, y1 = xnew[i], ynew[i]
+                        x2, y2 = xnew[i + 1], ynew[i + 1]
+                        self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
+                    #2 çizgiyi kesikli bir çizgi ile birleştir
+
+
+            except ValueError as e:
+                print("Spline enterpolasyonu başarısız: ", e)
+                return
+
+        print("Curve drawn with appropriate interpolation.")
+
 
     def switch_curve(self):
         switch_curve_window = tk.Toplevel(self.root)
@@ -386,7 +475,19 @@ class ImageViewer:
         for index, axis in enumerate(self.axis_list):
             if axis[0] - 10 <= x <= axis[0] + 10 and axis[1] - 10 <= y <= axis[1] + 10:
                 self.selected_axis = axis
+                self.widgets.set_selected_axis(axis)
                 break
+
+    def check_axis(self, value_x, value_y) -> bool:
+        if self.axis_counter < 3:
+            return False
+        axis1 = self.value_list[0]
+        axis2 = self.value_list[1]
+        axis3 = [value_x, value_y]
+        # eğer 3 nokta aynı doğru üzerinde ise hata ver
+        if (axis1[0] * (axis2[1] - axis3[1]) + axis2[0] * (axis3[1] - axis1[1]) + axis3[0] * (
+                axis1[1] - axis2[1])) == 0:
+            return True
 
     def delete_point(self, event):
         print("delete point")
@@ -527,10 +628,10 @@ class ImageViewer:
         canvas_height = self.canvas.winfo_height()
         x_offset = (canvas_width - image_width) // 2
         y_offset = (canvas_height - image_height) // 2
-        for i in range(0, image_width, image_width // 5):
+        for i in range(0, image_width, image_width // int(self.grid_size_x)):
             self.canvas.create_line([(i + x_offset, y_offset), (i + x_offset, y_offset + image_height)],
                                     tag='grid_line', fill='gray')
-        for i in range(0, image_height, image_height // 5):
+        for i in range(0, image_height, image_height // int(self.grid_size_y)):
             self.canvas.create_line([(x_offset, i + y_offset), (x_offset + image_width, i + y_offset)], tag='grid_line',
                                     fill='gray')
 

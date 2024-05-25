@@ -2,6 +2,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from GeometryWindow import GeometryWindow
 from CurveSettingsWindow import CurveSettingsWindow
+from GridSettings import GridSettings
 
 
 class Widgets:
@@ -75,6 +76,7 @@ class Widgets:
         # Settings menu
         settings_menu = tk.Menu(menubar, tearoff=0)
         settings_menu.add_command(label="Curve Settings", command=self.curve_settings)
+        settings_menu.add_command(label="Grid Settings", command=self.grid_settings)
         menubar.add_cascade(label="Settings", menu=settings_menu)
 
         self.viewer.root.config(menu=menubar)
@@ -112,6 +114,13 @@ class Widgets:
         self.viewer.current_curve_label = tk.Label(button_frame, text=f"Current Curve: {self.viewer.current_curve} ")
         self.viewer.current_curve_label.pack(pady=5, side=tk.BOTTOM)
 
+        self.viewer.selected_axis_text = tk.Label(button_frame, text=f"Selected axis:")
+        self.viewer.selected_axis_text.pack(pady=10)
+        self.viewer.selected_axis_label = tk.Label(button_frame, text=f"{self.viewer.selected_axis}")
+        self.viewer.selected_axis_label.pack()
+
+
+
         # Create a PanedWindow to split the main area and the Geometry Window
         self.paned_window = tk.PanedWindow(self.viewer.root, orient=tk.HORIZONTAL)
         self.paned_window.pack(fill=tk.BOTH, expand=1)
@@ -143,6 +152,9 @@ class Widgets:
 
     def curve_settings(self):
         CurveSettingsWindow(self.viewer).open_settings_window()
+
+    def grid_settings(self):
+        GridSettings(self.viewer).open_settings_window()
 
     def zoom_in(self):
         self.viewer.zoom_factor *= 1.2
@@ -193,3 +205,6 @@ class Widgets:
 
     def set_current_curve(self, curve):
         self.viewer.current_curve_label.config(text=f"Current Curve: {curve}")
+
+    def set_selected_axis(self, axis):
+        self.viewer.selected_axis_label.config(text=f"{axis}")
