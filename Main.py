@@ -45,13 +45,16 @@ class ImageViewer:
 
         self.axis_button_state = False
         self.set_axis_button_state = False
+        self.select_tool_button_state = True
         self.add_points_button_state = False
+        self.point_match_button_state = False
         self.calculate_button_state = False
 
         self.axis_button = None
         self.set_axis_button = None
         self.add_points_button = None
         self.calculate_button = None
+        self.select_tool_button = None
 
         self.axis_state = True
         self.axis_list = []
@@ -148,7 +151,7 @@ class ImageViewer:
         """
         Reset the color of all toggle buttons.
         """
-        buttons = [self.axis_button, self.set_axis_button, self.add_points_button, self.calculate_button]
+        buttons = [self.axis_button, self.set_axis_button, self.add_points_button, self.calculate_button, self.select_tool_button, self.point_match_tool_button]
         for button in buttons:
             toggle_button_color(button, False)
 
@@ -157,6 +160,7 @@ class ImageViewer:
         Toggle the axis placement mode.
         """
         self.reset_button_colors()
+        self.close_select_tool()
         self.axis_button_state = not self.axis_button_state
         toggle_button_color(self.axis_button, self.axis_button_state)
         if self.axis_button_state:
@@ -168,6 +172,39 @@ class ImageViewer:
             self.canvas.bind("<Button-1>", self.mouse_click)
             self.canvas.bind("<Button-3>", self.select_axis)
 
+    def close_add_points_tool(self):
+        """
+        Close the Add Points tool.
+        """
+        if self.add_points_button_state:
+            self.add_points_button_state = False
+            toggle_button_color(self.add_points_button, False)
+            self.root.config(cursor="")
+            self.canvas.unbind("<Button-1>")
+            self.canvas.unbind("<Button-3>")
+
+    def close_point_match_tool(self):
+        """
+        Close the Point Match tool.
+        """
+        if self.point_match_button_state:
+            self.point_match_button_state = False
+            toggle_button_color(self.point_match_tool_button, False)
+            self.root.config(cursor="")
+            self.canvas.unbind("<Motion>")
+            self.canvas.unbind("<Button-1>")
+            self.canvas.bind("<Button-1>", self.mouse_click)
+            self.canvas.bind("<Button-3>", self.select_axis)
+            self.canvas.delete("cursor_circle")
+
+    def close_select_tool(self):
+        """
+        Close the Select Tool.
+        """
+        if self.select_tool_button_state:
+            self.select_tool_button_state = False
+            toggle_button_color(self.select_tool_button, False)
+
     def show_points(self):
         """
         Toggle the points placement mode.
@@ -176,6 +213,8 @@ class ImageViewer:
         self.add_points_button_state = not self.add_points_button_state
         toggle_button_color(self.add_points_button, self.add_points_button_state)
         if self.add_points_button_state:
+            self.close_point_match_tool()
+            self.close_select_tool()
             self.root.config(cursor="dotbox")
             self.canvas.bind("<Button-1>", self.add_points)
             self.canvas.bind("<Button-3>", self.delete_point)
@@ -183,6 +222,7 @@ class ImageViewer:
             self.root.config(cursor="")
             self.canvas.bind("<Button-1>", self.mouse_click)
             self.canvas.bind("<Button-3>", self.select_axis)
+            self.check_select_tool_state()
 
     def set_axis(self):
         """
@@ -351,6 +391,30 @@ class ImageViewer:
         except ValueError:
             return False
 
+    def select_tool(self):
+        """
+        Close all tools and reset to normal cursor.
+        """
+        self.close_add_points_tool()
+        self.close_point_match_tool()
+        self.reset_button_colors()
+        self.select_tool_button_state = True
+        toggle_button_color(self.select_tool_button, True)
+        self.root.config(cursor="")
+        self.canvas.bind("<Button-1>", self.mouse_click)
+        self.canvas.bind("<Button-3>", self.select_axis)
+
+    def check_select_tool_state(self):
+        """
+        Check the state of the select tool and update button color.
+        """
+        if not self.point_match_button_state and not self.add_points_button_state:
+            self.select_tool_button_state = True
+            toggle_button_color(self.select_tool_button, True)
+        else:
+            self.select_tool_button_state = False
+            toggle_button_color(self.select_tool_button, False)
+
     def add_points(self, event):
         """
         Add a point to the current curve.
@@ -367,6 +431,64 @@ class ImageViewer:
         self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
         self.curves[self.current_curve - 1].append((x, y))
         self.draw_curve_line()
+
+    def match_tool_motion(self, event):
+        """
+        Handle mouse motion events for point match tool.
+        """
+        x, y = event.x, event.y
+        radius = 30
+
+        self.canvas.delete("cursor_circle")
+        color = "black"
+
+        if self.image_filtered:
+            try:
+                pixel_color = self.image_filtered.getpixel((x, y))
+                if pixel_color == 0:
+                    color = "green"
+            except IndexError:
+                pass
+
+        self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, outline=color, width=3,
+                                tags="cursor_circle")
+
+    def match_tool_click(self, event):
+        """
+        Handle click events for point match tool.
+        """
+        if self.axis_counter < 3:
+            messagebox.showinfo("Info", "Please, Add at least 3 axis to add points.")
+            return
+        x, y = event.x, event.y
+        self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill="blue")
+        point_text = f"X: {x}, Y: {y}"
+        self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
+        self.curves[self.current_curve - 1].append((x, y))
+        self.draw_curve_line()
+
+    def show_point_match_tool(self):
+        """
+        Toggle the point match tool mode.
+        """
+        self.reset_button_colors()
+        self.point_match_button_state = not self.point_match_button_state
+        toggle_button_color(self.point_match_tool_button, self.point_match_button_state)
+        if self.point_match_button_state:
+            self.close_add_points_tool()
+            self.close_select_tool()
+            self.root.config(cursor="crosshair")
+            self.canvas.bind("<Motion>", self.match_tool_motion)
+            self.canvas.bind("<Button-1>", self.match_tool_click)
+        else:
+            self.root.config(cursor="")
+            self.canvas.unbind("<Motion>")
+            self.canvas.unbind("<Button-1>")
+            self.canvas.bind("<Button-1>", self.mouse_click)
+            self.canvas.bind("<Button-3>", self.select_axis)
+            self.canvas.delete("cursor_circle")
+            self.check_select_tool_state()
+
 
     def draw_curve_line(self):
         """

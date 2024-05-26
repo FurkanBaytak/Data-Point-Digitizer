@@ -99,8 +99,15 @@ class Widgets:
         self.viewer.set_axis_button = tk.Button(button_frame, text="Set Axis", command=self.viewer.set_axis)
         self.viewer.set_axis_button.pack(pady=5)
 
-        self.viewer.add_points_button = tk.Button(button_frame, text="Add Points", command=self.viewer.show_points)
+        self.viewer.select_tool_button = tk.Button(button_frame, text="Select Tool", command=self.viewer.select_tool)
+        self.viewer.select_tool_button.pack(pady=5)
+
+        self.viewer.add_points_button = tk.Button(button_frame, text="Curve Point Tool", command=self.viewer.show_points)
         self.viewer.add_points_button.pack(pady=5)
+
+        self.viewer.point_match_tool_button = tk.Button(button_frame, text="Point Match Tool",
+                                                        command=self.viewer.show_point_match_tool)
+        self.viewer.point_match_tool_button.pack(pady=5)
 
         self.viewer.calculate_button = tk.Button(button_frame, text="Calculate", command=self.viewer.calculate_values)
         self.viewer.calculate_button.pack(pady=5)
