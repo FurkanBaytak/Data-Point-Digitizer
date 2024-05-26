@@ -36,6 +36,7 @@ class ImageViewer:
         self.root = _root
         self.root.title("Show Image")
         self.zoom_factor = 1.2
+        self.line_type = "Smooth"
 
         self.open_image_button = None
         self.image_original = None
@@ -386,59 +387,65 @@ class ImageViewer:
         x_list = x_list[sorted_indices]
         y_list = y_list[sorted_indices]
 
-        if len(x_list) < 4:
+        if self.line_type == "Straight":
             for i in range(len(x_list) - 1):
                 x1, y1 = x_list[i], y_list[i]
                 x2, y2 = x_list[i + 1], y_list[i + 1]
                 self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
         else:
-            x_array = np.array(x_list)
-            y_array = np.array(y_list)
-
-            try:
-                x_list2 = []
-                y_list2 = []
-                split_index = -1
-                for i in range(len(x_array) - 1):
-                    if abs(x_array[i] - x_array[i + 1]) <= 2:
-                        split_index = i + 1
-                        break
-                if split_index != -1:
-                    x_list1 = np.array(x_array[:split_index])
-                    y_list1 = np.array(y_array[:split_index])
-                    x_list2 = np.array(x_array[split_index:])
-                    y_list2 = np.array(y_array[split_index:])
-                else:
-                    x_list1 = np.array(x_array)
-                    y_list1 = np.array(y_array)
-                x_new = np.linspace(x_list1.min(), x_list1.max(), 100)
-                y_new = make_interp_spline(x_list1, y_list1, k=2)(x_new)
-                for i in range(len(x_new) - 1):
-                    x1, y1 = x_new[i], y_new[i]
-                    x2, y2 = x_new[i + 1], y_new[i + 1]
+            if len(x_list) < 4:
+                for i in range(len(x_list) - 1):
+                    x1, y1 = x_list[i], y_list[i]
+                    x2, y2 = x_list[i + 1], y_list[i + 1]
                     self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
+            else:
+                x_array = np.array(x_list)
+                y_array = np.array(y_list)
 
-                if len(x_list2) == 0:
-                    return
-
-                self.canvas.create_line(x_list1[-1], y_list1[-1], x_list2[0], y_list2[0], fill=self.color,
-                                        width=self.size, dash=(4, 4))
-
-                if len(x_list2) < 4:
-                    for i in range(len(x_list2) - 1):
-                        x1, y1 = x_list2[i], y_list2[i]
-                        x2, y2 = x_list2[i + 1], y_list2[i + 1]
-                        self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
-                else:
-                    x_new = np.linspace(x_list2.min(), x_list2.max(), 100)
-                    y_new = make_interp_spline(x_list2, y_list2, k=2)(x_new)
+                try:
+                    x_list2 = []
+                    y_list2 = []
+                    split_index = -1
+                    for i in range(len(x_array) - 1):
+                        if abs(x_array[i] - x_array[i + 1]) <= 2:
+                            split_index = i + 1
+                            break
+                    if split_index != -1:
+                        x_list1 = np.array(x_array[:split_index])
+                        y_list1 = np.array(y_array[:split_index])
+                        x_list2 = np.array(x_array[split_index:])
+                        y_list2 = np.array(y_array[split_index:])
+                    else:
+                        x_list1 = np.array(x_array)
+                        y_list1 = np.array(y_array)
+                    x_new = np.linspace(x_list1.min(), x_list1.max(), 100)
+                    y_new = make_interp_spline(x_list1, y_list1, k=2)(x_new)
                     for i in range(len(x_new) - 1):
                         x1, y1 = x_new[i], y_new[i]
                         x2, y2 = x_new[i + 1], y_new[i + 1]
                         self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
 
-            except ValueError:
-                return
+                    if len(x_list2) == 0:
+                        return
+
+                    self.canvas.create_line(x_list1[-1], y_list1[-1], x_list2[0], y_list2[0], fill=self.color,
+                                            width=self.size, dash=(4, 4))
+
+                    if len(x_list2) < 4:
+                        for i in range(len(x_list2) - 1):
+                            x1, y1 = x_list2[i], y_list2[i]
+                            x2, y2 = x_list2[i + 1], y_list2[i + 1]
+                            self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
+                    else:
+                        x_new = np.linspace(x_list2.min(), x_list2.max(), 100)
+                        y_new = make_interp_spline(x_list2, y_list2, k=2)(x_new)
+                        for i in range(len(x_new) - 1):
+                            x1, y1 = x_new[i], y_new[i]
+                            x2, y2 = x_new[i + 1], y_new[i + 1]
+                            self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
+
+                except ValueError as e:
+                    return
 
     def switch_curve(self):
         """

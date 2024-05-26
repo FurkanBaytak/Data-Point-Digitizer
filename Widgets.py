@@ -262,7 +262,7 @@ class Widgets:
                 'point_values': self.viewer.point_values,
                 'data_values': self.viewer.data_values,
                 'last_ID': self.viewer.last_ID,
-
+                'line_type': self.viewer.line_type,
 
             }
             if self.viewer.image_original:
@@ -298,6 +298,7 @@ class Widgets:
             self.viewer.point_values = data.get('point_values')
             self.viewer.data_values = data.get('data_values')
             self.viewer.last_ID = data.get('last_ID')
+            self.viewer.line_type = data.get('line_type')
 
             img_str = data.get('image')
             if img_str:

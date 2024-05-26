@@ -12,6 +12,7 @@ class CurveSettingsWindow:
         """
         self.parent = parent
         self.settings_window = None
+        self.line_type = tk.StringVar(value="Smooth")
 
     def open_settings_window(self):
         """
@@ -40,9 +41,19 @@ class CurveSettingsWindow:
         size_scale.set(self.parent.size)
         size_scale.grid(row=1, column=1, padx=5, pady=5)
 
-        # Button to apply settings
+        # Line type selection
+        line_type_label = tk.Label(self.settings_window, text="Connect As:")
+        line_type_label.grid(row=2, column=0, padx=5, pady=5)
+        self.line_type = tk.StringVar(value=self.parent.line_type)
+        line_type_smooth = tk.Radiobutton(self.settings_window, text="Smooth", variable=self.line_type, value="Smooth")
+        line_type_smooth.grid(row=2, column=1, padx=5, pady=5)
+        line_type_straight = tk.Radiobutton(self.settings_window, text="Straight", variable=self.line_type,
+                                            value="Straight")
+        line_type_straight.grid(row=2, column=2, padx=5, pady=5)
+
+        # Apply button
         apply_button = tk.Button(self.settings_window, text="Apply", command=self.apply_settings)
-        apply_button.grid(row=3, column=0, columnspan=2, pady=10)
+        apply_button.grid(row=3, column=0, columnspan=3, pady=10)
 
     def choose_color(self):
         """
@@ -65,5 +76,6 @@ class CurveSettingsWindow:
         """
         Apply the selected settings and redraw the curve line. Closes the settings window.
         """
+        self.parent.line_type = self.line_type.get()
         self.parent.draw_curve_line()
         self.settings_window.destroy()
