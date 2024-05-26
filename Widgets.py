@@ -6,6 +6,8 @@ from GridSettings import GridSettings
 from EditCurveList import EditCurveList
 import tkinter.filedialog as filedialog
 import json
+import base64
+from io import BytesIO
 
 
 class Widgets:
@@ -21,7 +23,6 @@ class Widgets:
         self.background_var = None
         self.paned_window = None
         self.viewer = viewer
-        self.clipboard = ""
         self.history = []
         self.redo_stack = []
         self.geometry_window = None
@@ -36,11 +37,11 @@ class Widgets:
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="Open Image", command=self.viewer.open_image)
         file_menu.add_separator()
-        file_menu.add_command(label="Save Project", command=self.save_project)  # Save Project Ekleme
+        file_menu.add_command(label="Save Project", command=self.save_project)
         file_menu.add_command(label="Load Project", command=self.load_project)
         file_menu.add_command(label="Exit", command=self.viewer.root.quit)
         file_menu.add_separator()
-        file_menu.add_command(label="Export", command=self.viewer.export_data)
+        file_menu.add_command(label="Export", command=self.export_to_csv)
         menubar.add_cascade(label="File", menu=file_menu)
 
         # Edit menu
@@ -246,12 +247,29 @@ class Widgets:
                 'axis_list': self.viewer.axis_list,
                 'value_list': self.viewer.value_list,
                 'curves': self.viewer.curves,
+                'curve_IDs': self.viewer.curve_IDs,
                 'curve_names': self.viewer.curve_names,
                 'current_curve': self.viewer.current_curve,
                 'grid_size_x': self.viewer.grid_size_x,
                 'grid_size_y': self.viewer.grid_size_y,
-                'grid_lines_visible': self.viewer.grid_lines_visible
+                'grid_lines_visible': self.viewer.grid_lines_visible,
+                'color': self.viewer.color,
+                'size': self.viewer.size,
+                'data_table': self.viewer.data_table,
+                'axis_counter': self.viewer.axis_counter,
+                'axis_state': self.viewer.axis_state,
+                'selected_axis': self.viewer.selected_axis,
+                'point_values': self.viewer.point_values,
+                'data_values': self.viewer.data_values,
+                'last_ID': self.viewer.last_ID,
+
+
             }
+            if self.viewer.image_original:
+                buffered = BytesIO()
+                self.viewer.image_original.save(buffered, format="PNG")
+                img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+                data['image'] = img_str
             with open(file_path, 'w') as file:
                 json.dump(data, file, indent=4)
             print(f"Project saved as {file_path}")
@@ -264,11 +282,32 @@ class Widgets:
             print(f"Project {file_path} loaded")
             self.viewer.axis_list = data.get('axis_list', [])
             self.viewer.value_list = data.get('value_list', [])
-            self.viewer.curves = data.get('curves', [[] for _ in range(10)])
-            self.viewer.curve_names = data.get('curve_names', [f"Curve {i + 1}" for i in range(10)])
-            self.viewer.current_curve = data.get('current_curve', 1)
-            self.viewer.grid_size_x = data.get('grid_size_x', 5)
-            self.viewer.grid_size_y = data.get('grid_size_y', 5)
-            self.viewer.grid_lines_visible = data.get('grid_lines_visible', False)
+            self.viewer.curves = data.get('curves')
+            self.viewer.curve_names = data.get('curve_names')
+            self.viewer.curve_IDs = data.get('curve_IDs')
+            self.viewer.current_curve = data.get('current_curve')
+            self.viewer.grid_size_x = data.get('grid_size_x')
+            self.viewer.grid_size_y = data.get('grid_size_y')
+            self.viewer.grid_lines_visible = data.get('grid_lines_visible')
+            self.viewer.color = data.get('color')
+            self.viewer.size = data.get('size')
+            self.viewer.data_table = data.get('data_table')
+            self.viewer.axis_counter = data.get('axis_counter')
+            self.viewer.axis_state = data.get('axis_state')
+            self.viewer.selected_axis = data.get('selected_axis')
+            self.viewer.point_values = data.get('point_values')
+            self.viewer.data_values = data.get('data_values')
+            self.viewer.last_ID = data.get('last_ID')
+
+            img_str = data.get('image')
+            if img_str:
+                img_data = base64.b64decode(img_str)
+                self.viewer.image_original = Image.open(BytesIO(img_data))
+                self.viewer.image_tk = ImageTk.PhotoImage(self.viewer.image_original)
+                self.viewer.canvas.create_image(0, 0, anchor=tk.CENTER, image=self.viewer.image_tk)
             self.viewer.redraw_canvas()
-            self.viewer.draw_grid()
+
+            self.set_current_curve(self.viewer.curve_names[self.viewer.current_curve - 1])
+
+    def export_to_csv(self):
+        GeometryWindow(self.paned_window, self.viewer).export_to_csv()

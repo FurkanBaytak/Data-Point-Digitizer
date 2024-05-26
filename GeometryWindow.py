@@ -1,7 +1,8 @@
 import copy
 import tkinter as tk
 from tkinter import ttk
-
+import csv
+from tkinter import filedialog
 
 class GeometryWindow:
     def __init__(self, parent, viewer):
@@ -13,10 +14,10 @@ class GeometryWindow:
         viewer (Viewer): An instance of a viewer class that provides data.
         """
         self.viewer = viewer
+        self.parent = parent
         self.frame = tk.Frame(parent, width=320, bg="grey")
         self.label = tk.Label(self.frame, text="Geometry Window", bg="grey")
         self.label.pack(side=tk.TOP, fill=tk.X)
-
         self.tree = ttk.Treeview(self.frame, columns=("Curves", "Points", "X", "Y"), show="headings")
         self._configure_tree()
         self.tree.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -80,3 +81,19 @@ class GeometryWindow:
                     self.tree.insert("", tk.END, values=(
                         self.viewer.curve_names[i], j + 1, value[0], value[1]
                     ))
+
+    def export_to_csv(self):
+        """
+        Export the data in the treeview to a CSV file.
+        """
+        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        if file_path:
+            with open(file_path, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["Curves", "Points", "X", "Y"])  # Write the headers
+
+                # Write the treeview data
+                for row_id in self.tree.get_children():
+                    row = self.tree.item(row_id)['values']
+                    writer.writerow(row)
+            print(f"Data exported to {file_path}")

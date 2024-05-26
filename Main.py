@@ -68,9 +68,6 @@ class ImageViewer:
         self.last_ID = 1
         self.curve_names = [f"Curve {i + 1}" for i in range(10)]
 
-        self.history = []
-        self.redo_stack = []
-
         self.Geometry_window = GeometryWindow(self.root, self)
         self.curve_fitting_window = None
 
@@ -81,7 +78,6 @@ class ImageViewer:
 
         self.widgets = Widgets(self)
         self.widgets.create_widgets()
-        self.root.bind("<Configure>", self.on_resize)
 
     @staticmethod
     def format_control(file_path):
@@ -307,6 +303,7 @@ class ImageViewer:
         window (tk.Toplevel): The value entry window.
         """
         self.axis_list.pop()
+        self.redraw_canvas()
         self.axis_counter -= 1
         self.value_entered = False
         window.destroy()
@@ -440,7 +437,7 @@ class ImageViewer:
                         x2, y2 = x_new[i + 1], y_new[i + 1]
                         self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
 
-            except ValueError as e:
+            except ValueError:
                 return
 
     def switch_curve(self):
@@ -525,8 +522,8 @@ class ImageViewer:
             return
 
         x, y = float(event.x), float(event.y)
-        self.canvas.create_line(x - 10, y, x + 10, y, fill="red", width=1)
-        self.canvas.create_line(x, y - 10, x, y + 10, fill="red", width=1)
+        self.canvas.create_line(x - 20, y, x + 20, y, fill="red", width=3)
+        self.canvas.create_line(x, y - 20, x, y + 20, fill="red", width=3)
 
         value_text = f"X: {x}, Y: {y}"
         self.canvas.create_text(x, y - 20, text=value_text, fill="blue")
@@ -662,7 +659,6 @@ class ImageViewer:
                         values.append([float(f"{point[0]:.2f}"), float(f"{point[1]:.2f}")])
                     self.data_values.append(values)
                     self.point_values.clear()
-            self.data_table = self.create_data_table()
 
             self.Geometry_window.populate_tree()
             self.widgets.toggle_geometry_window()
@@ -692,8 +688,8 @@ class ImageViewer:
         self.clear_canvas()
         if n == 0:
             for i, _axis in enumerate(self.axis_list):
-                self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
-                self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
+                self.canvas.create_line(_axis[0] - 20, _axis[1], _axis[0] + 20, _axis[1], fill="red", width=3)
+                self.canvas.create_line(_axis[0], _axis[1] - 20, _axis[0], _axis[1] + 20, fill="red", width=3)
                 self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
                 self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
             for i, _point in enumerate(self.curves[self.current_curve - 1]):
@@ -703,8 +699,8 @@ class ImageViewer:
             self.draw_curve_line()
         if n == 1:
             for i, _axis in enumerate(self.axis_list):
-                self.canvas.create_line(_axis[0] - 10, _axis[1], _axis[0] + 10, _axis[1], fill="red", width=1)
-                self.canvas.create_line(_axis[0], _axis[1] - 10, _axis[0], _axis[1] + 10, fill="red", width=1)
+                self.canvas.create_line(_axis[0] - 20, _axis[1], _axis[0] + 20, _axis[1], fill="red", width=3)
+                self.canvas.create_line(_axis[0], _axis[1] - 20, _axis[0], _axis[1] + 20, fill="red", width=3)
                 self.canvas.create_text(_axis[0], _axis[1] - 20, text=f"X: {_axis[0]}, Y: {_axis[1]}", fill="blue")
                 self.canvas.create_text(_axis[0], _axis[1] + 10, text=f"value: {self.value_list[i]}", fill="green")
             for i, _point in enumerate(self.curves[self.current_curve - 1]):
@@ -785,17 +781,6 @@ class ImageViewer:
 
         data_table = pd.DataFrame(data, columns=["Curve", "Point", "X", "Y"])
         return data_table
-
-    def export_data(self):
-        """
-        Export the data table to a CSV file.
-        """
-        if self.data_table is None:
-            messagebox.showinfo("Info", "Please, Calculate values to export data.")
-            return
-        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
-        if file_path:
-            self.data_table.to_csv(file_path, index=False)
 
 
 if __name__ == "__main__":
