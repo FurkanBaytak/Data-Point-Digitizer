@@ -4,6 +4,8 @@ from GeometryWindow import GeometryWindow
 from CurveSettingsWindow import CurveSettingsWindow
 from GridSettings import GridSettings
 from EditCurveList import EditCurveList
+import tkinter.filedialog as filedialog
+import json
 
 
 class Widgets:
@@ -34,6 +36,8 @@ class Widgets:
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="Open Image", command=self.viewer.open_image)
         file_menu.add_separator()
+        file_menu.add_command(label="Save Project", command=self.save_project)  # Save Project Ekleme
+        file_menu.add_command(label="Load Project", command=self.load_project)
         file_menu.add_command(label="Exit", command=self.viewer.root.quit)
         file_menu.add_separator()
         file_menu.add_command(label="Export", command=self.viewer.export_data)
@@ -234,3 +238,37 @@ class Widgets:
         if self.edit_curve_list is None:
             self.edit_curve_list = EditCurveList(self.viewer)
         self.edit_curve_list.open_list_window()
+
+    def save_project(self):
+        file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+        if file_path:
+            data = {
+                'axis_list': self.viewer.axis_list,
+                'value_list': self.viewer.value_list,
+                'curves': self.viewer.curves,
+                'curve_names': self.viewer.curve_names,
+                'current_curve': self.viewer.current_curve,
+                'grid_size_x': self.viewer.grid_size_x,
+                'grid_size_y': self.viewer.grid_size_y,
+                'grid_lines_visible': self.viewer.grid_lines_visible
+            }
+            with open(file_path, 'w') as file:
+                json.dump(data, file, indent=4)
+            print(f"Project saved as {file_path}")
+
+    def load_project(self):
+        file_path = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+        if file_path:
+            with open(file_path, 'r') as file:
+                data = json.load(file)
+            print(f"Project {file_path} loaded")
+            self.viewer.axis_list = data.get('axis_list', [])
+            self.viewer.value_list = data.get('value_list', [])
+            self.viewer.curves = data.get('curves', [[] for _ in range(10)])
+            self.viewer.curve_names = data.get('curve_names', [f"Curve {i + 1}" for i in range(10)])
+            self.viewer.current_curve = data.get('current_curve', 1)
+            self.viewer.grid_size_x = data.get('grid_size_x', 5)
+            self.viewer.grid_size_y = data.get('grid_size_y', 5)
+            self.viewer.grid_lines_visible = data.get('grid_lines_visible', False)
+            self.viewer.redraw_canvas()
+            self.viewer.draw_grid()
