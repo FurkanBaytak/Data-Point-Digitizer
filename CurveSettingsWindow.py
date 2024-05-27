@@ -62,6 +62,7 @@ class CurveSettingsWindow:
         color_code = colorchooser.askcolor(title="Choose color")[1]
         if color_code:
             self.parent.color = color_code
+        self.parent.draw_curve_line()
 
     def change_size(self, value):
         """

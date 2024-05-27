@@ -25,6 +25,7 @@ class Widgets:
         self.viewer = viewer
         self.history = []
         self.redo_stack = []
+        self.scale_factor = 1
         self.geometry_window = None
 
     def create_widgets(self):
@@ -108,7 +109,8 @@ class Widgets:
         self.viewer.select_tool_button = tk.Button(button_frame, text="Select Tool", command=self.viewer.select_tool)
         self.viewer.select_tool_button.pack(pady=5)
 
-        self.viewer.add_points_button = tk.Button(button_frame, text="Curve Point Tool", command=self.viewer.show_points)
+        self.viewer.add_points_button = tk.Button(button_frame, text="Curve Point Tool",
+                                                  command=self.viewer.show_points)
         self.viewer.add_points_button.pack(pady=5)
 
         self.viewer.point_match_tool_button = tk.Button(button_frame, text="Point Match Tool",
@@ -186,8 +188,10 @@ class Widgets:
         """
         if event.delta > 0:
             self.zoom_in_with_position(event)
+            self.viewer.redraw_canvas()
         else:
             self.zoom_out_with_position(event)
+            self.viewer.redraw_canvas()
 
     def zoom_in_with_position(self, event):
         """

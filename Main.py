@@ -29,6 +29,7 @@ class ImageViewer:
         Parameters:
         root (tk.Tk): The root window of the Tkinter application.
         """
+        self.segment_fill_tool_button = None
         self.CurveSettingsWindow = CurveSettingsWindow(self)
         self.color = "blue"  # Default color
         self.size = 1
@@ -417,7 +418,8 @@ class ImageViewer:
         """
         Check the state of the select tool and update button color.
         """
-        if not self.point_match_button_state and not self.add_points_button_state and not self.segment_fill_button_state:
+        if (not self.point_match_button_state and not self.add_points_button_state
+                and not self.segment_fill_button_state):
             self.select_tool_button_state = True
             toggle_button_color(self.select_tool_button, True)
         else:
@@ -510,9 +512,9 @@ class ImageViewer:
         self.segment_fill_button_state = not self.segment_fill_button_state
         toggle_button_color(self.segment_fill_tool_button, self.segment_fill_button_state)
         if self.segment_fill_button_state:
-            self.close_add_points_tool()  # Add Points tool'u kapat
-            self.close_point_match_tool()  # Point Match Tool'u kapat
-            self.close_select_tool()  # Select Tool'u kapat
+            self.close_add_points_tool()
+            self.close_point_match_tool()
+            self.close_select_tool()
             self.root.config(cursor="crosshair")  # Özel cursor
             self.extract_graph_segments()
             self.canvas.bind("<Motion>", self.segment_fill_motion)
@@ -570,7 +572,8 @@ class ImageViewer:
                     self.segment_points.append((x1, y1))
                     self.segment_points.append((x2, y2))
 
-    def is_point_near_segment(self, px, py, x1, y1, x2, y2, threshold=15):
+    @staticmethod
+    def is_point_near_segment(px, py, x1, y1, x2, y2, threshold=15):
         """
         Check if a point is near a line segment.
         """
@@ -650,10 +653,9 @@ class ImageViewer:
             self.root.config(cursor="")
             self.canvas.unbind("<Motion>")
             self.canvas.unbind("<Button-1>")
-            self.canvas.delete("segment_fill_line")  # Segment çizgilerini sil
+            self.canvas.delete("segment_fill_line")
             self.canvas.bind("<Button-1>", self.mouse_click)
             self.canvas.bind("<Button-3>", self.select_axis)
-
 
     def draw_curve_line(self):
         """
@@ -679,6 +681,7 @@ class ImageViewer:
                 x1, y1 = x_list[i], y_list[i]
                 x2, y2 = x_list[i + 1], y_list[i + 1]
                 self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
+
         else:
             if len(x_list) < 4:
                 for i in range(len(x_list) - 1):
@@ -731,7 +734,7 @@ class ImageViewer:
                             x2, y2 = x_new[i + 1], y_new[i + 1]
                             self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=self.size)
 
-                except ValueError as e:
+                except ValueError:
                     return
 
     def switch_curve(self):

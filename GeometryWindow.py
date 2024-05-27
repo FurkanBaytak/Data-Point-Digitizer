@@ -4,6 +4,7 @@ from tkinter import ttk
 import csv
 from tkinter import filedialog
 
+
 class GeometryWindow:
     def __init__(self, parent, viewer):
         """
