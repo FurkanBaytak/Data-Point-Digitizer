@@ -7,6 +7,7 @@ from GeometryWindow import GeometryWindow
 from CurveSettingsWindow import CurveSettingsWindow
 from scipy.interpolate import make_interp_spline
 import pandas as pd
+import cv2
 
 
 def toggle_button_color(button, state):
@@ -48,13 +49,17 @@ class ImageViewer:
         self.select_tool_button_state = True
         self.add_points_button_state = False
         self.point_match_button_state = False
+        self.segment_fill_button_state = False
+        self.segment_points = []
+        self.graph_segments = []
         self.calculate_button_state = False
 
         self.axis_button = None
         self.set_axis_button = None
-        self.add_points_button = None
-        self.calculate_button = None
         self.select_tool_button = None
+        self.add_points_button = None
+        self.point_match_tool_button = None
+        self.calculate_button = None
 
         self.axis_state = True
         self.axis_list = []
@@ -94,7 +99,7 @@ class ImageViewer:
         Returns:
         bool: True if the file has a supported format, False otherwise.
         """
-        return file_path.endswith((".jpg", ".jpeg", ".png"))
+        return file_path.endswith((".jpg", ".jpeg", ".png", ".webp"))
 
     def open_image(self):
         """
@@ -151,7 +156,8 @@ class ImageViewer:
         """
         Reset the color of all toggle buttons.
         """
-        buttons = [self.axis_button, self.set_axis_button, self.add_points_button, self.calculate_button, self.select_tool_button, self.point_match_tool_button]
+        buttons = [self.axis_button, self.set_axis_button, self.add_points_button, self.calculate_button,
+                   self.point_match_tool_button, self.segment_fill_tool_button, self.select_tool_button]
         for button in buttons:
             toggle_button_color(button, False)
 
@@ -360,17 +366,19 @@ class ImageViewer:
         y (int): The Y coordinate of the axis.
         value_window (tk.Toplevel): The window for entering the values.
         """
-        if self.check_axis(int(value_x), int(value_y)):
-            messagebox.showinfo("Info", "3 points must not be on the same line.")
-            return
-        if self.is_integer(value_x) and self.is_integer(value_y):
-            value_x = int(value_x)
-            value_y = int(value_y)
-            self.canvas.create_text(x, y + 10, text=f"value X: {value_x}, Y: {value_y}", fill="green")
-            self.value_list.append((value_x, value_y))
+        try:
 
-            value_window.destroy()
-        else:
+            if self.check_axis(int(value_x), int(value_y)):
+                messagebox.showinfo("Info", "3 points must not be on the same line.")
+                return
+            if self.is_integer(value_x) and self.is_integer(value_y):
+                value_x = int(value_x)
+                value_y = int(value_y)
+                self.canvas.create_text(x, y + 10, text=f"value X: {value_x}, Y: {value_y}", fill="green")
+                self.value_list.append((value_x, value_y))
+
+                value_window.destroy()
+        except ValueError:
             messagebox.showerror("Error", "Please enter valid integer values for X and Y.")
         self.value_entered = False
 
@@ -397,6 +405,7 @@ class ImageViewer:
         """
         self.close_add_points_tool()
         self.close_point_match_tool()
+        self.close_segment_fill_tool()
         self.reset_button_colors()
         self.select_tool_button_state = True
         toggle_button_color(self.select_tool_button, True)
@@ -408,7 +417,7 @@ class ImageViewer:
         """
         Check the state of the select tool and update button color.
         """
-        if not self.point_match_button_state and not self.add_points_button_state:
+        if not self.point_match_button_state and not self.add_points_button_state and not self.segment_fill_button_state:
             self.select_tool_button_state = True
             toggle_button_color(self.select_tool_button, True)
         else:
@@ -426,6 +435,10 @@ class ImageViewer:
             messagebox.showinfo("Info", "Please, Add at least 3 axis to add points.")
             return
         x, y = event.x, event.y
+
+        if (x, y) in self.curves[self.current_curve - 1]:
+            return
+
         self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill="blue")
         point_text = f"X: {x}, Y: {y}"
         self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
@@ -488,6 +501,158 @@ class ImageViewer:
             self.canvas.bind("<Button-3>", self.select_axis)
             self.canvas.delete("cursor_circle")
             self.check_select_tool_state()
+
+    def show_segment_fill_tool(self):
+        """
+        Toggle the segment fill tool mode.
+        """
+        self.reset_button_colors()
+        self.segment_fill_button_state = not self.segment_fill_button_state
+        toggle_button_color(self.segment_fill_tool_button, self.segment_fill_button_state)
+        if self.segment_fill_button_state:
+            self.close_add_points_tool()  # Add Points tool'u kapat
+            self.close_point_match_tool()  # Point Match Tool'u kapat
+            self.close_select_tool()  # Select Tool'u kapat
+            self.root.config(cursor="crosshair")  # Özel cursor
+            self.extract_graph_segments()
+            self.canvas.bind("<Motion>", self.segment_fill_motion)
+            self.canvas.bind("<Button-1>", self.segment_fill_click)
+        else:
+            self.root.config(cursor="")  # Normal cursor
+            self.canvas.unbind("<Motion>")
+            self.canvas.unbind("<Button-1>")
+            self.canvas.bind("<Button-1>", self.mouse_click)
+            self.canvas.bind("<Button-3>", self.select_axis)
+            self.canvas.delete("segment_fill_line")
+            self.check_select_tool_state()
+
+    def extract_graph_segments(self):
+        """
+        Extract segments of the graph using image processing.
+        """
+        if self.image_filtered:
+            image_array = np.array(self.image_filtered.convert('L'))  # Convert image to grayscale
+
+            # Apply Gaussian Blur to reduce noise and improve edge detection
+            blurred = cv2.GaussianBlur(image_array, (5, 5), 0)
+
+            # Perform Canny edge detection
+            edges = cv2.Canny(blurred, 50, 150)
+
+            # Find contours in the edge map
+            contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            self.graph_segments = []
+
+            # Filter contours based on their length
+            min_length = 100  # Adjust this value as needed
+            for cnt in contours:
+                if cv2.arcLength(cnt, False) > min_length:
+                    # Approximate the contour to a polygon
+                    approx = cv2.approxPolyDP(cnt, 0.01 * cv2.arcLength(cnt, True), True)
+                    self.graph_segments.append(approx)
+
+            print(f"Detected {len(self.graph_segments)} graph segments")
+
+    def segment_fill_motion(self, event):
+        """
+        Handle mouse motion events for segment fill tool.
+        """
+        x, y = event.x, event.y
+        self.canvas.delete("segment_fill_line")
+
+        for segment in self.graph_segments:
+            for i in range(len(segment) - 1):
+                x1, y1 = segment[i][0]
+                x2, y2 = segment[i + 1][0]
+                if self.is_point_near_segment(x, y, x1, y1, x2, y2):
+                    self.canvas.create_line(x1, y1, x2, y2, fill="green", tags="segment_fill_line", width=5)
+                    self.segment_points.append((x1, y1))
+                    self.segment_points.append((x2, y2))
+
+    def is_point_near_segment(self, px, py, x1, y1, x2, y2, threshold=15):
+        """
+        Check if a point is near a line segment.
+        """
+        dist = np.abs((y2 - y1) * px - (x2 - x1) * py + x2 * y1 - y2 * x1) / np.sqrt((y2 - y1) ** 2 + (x2 - x1) ** 2)
+        return dist < threshold
+
+    def segment_fill_click(self, event):
+        """
+        Handle click events for segment fill tool.
+        """
+        x, y = event.x, event.y
+        self.segment_points = []
+        selected_segment = None
+
+        # Find the segment that the user clicked on
+        for segment in self.graph_segments:
+            for i in range(len(segment) - 1):
+                x1, y1 = segment[i][0]
+                x2, y2 = segment[i + 1][0]
+                if self.is_point_near_segment(x, y, x1, y1, x2, y2):
+                    selected_segment = segment
+                    break
+            if selected_segment is not None:
+                break
+
+        if selected_segment is not None and selected_segment.size > 0:
+            self.fill_segment(selected_segment)
+
+    def fill_segment(self, segment):
+        """
+        Fill the selected segment with points.
+        """
+        self.canvas.delete("segment_fill_line")
+
+        for i in range(len(segment) - 1):
+            x1, y1 = segment[i][0]
+            x2, y2 = segment[i + 1][0]
+
+            # Calculate the number of points to add between the segment endpoints
+            segment_length = np.hypot(x2 - x1, y2 - y1)
+            if segment_length < 15:
+                continue  # Skip very short segments
+
+            num_points = int(segment_length // 80)  # Adjust the spacing here
+            if num_points == 0:
+                num_points = 1  # Ensure we add at least one point
+
+            for j in range(num_points + 1):
+                t = j / num_points
+                x = int(x1 * (1 - t) + x2 * t)
+                y = int(y1 * (1 - t) + y2 * t)
+                self.add_point_to_curve(x, y)
+
+    def add_point_to_curve(self, x, y):
+        """
+        Add a point to the current curve.
+        """
+        if self.axis_counter < 3:
+            messagebox.showinfo("Info", "Please, Add at least 3 axis to add points.")
+            return
+        if (x, y) in self.curves[self.current_curve - 1]:
+            return
+
+        self.canvas.create_oval(x - 2, y - 2, x + 2, y + 2, fill="blue")
+        point_text = f"X: {x}, Y: {y}"
+        self.canvas.create_text(x, y - 20, text=point_text, fill="purple")
+        self.curves[self.current_curve - 1].append((x, y))
+        self.draw_curve_line()
+
+    def close_segment_fill_tool(self):
+        """
+        Close the Segment Fill tool.
+        """
+        if self.segment_fill_button_state:
+            self.segment_fill_button_state = False
+            toggle_button_color(self.segment_fill_tool_button, False)
+            self.root.config(cursor="")
+            self.canvas.unbind("<Motion>")
+            self.canvas.unbind("<Button-1>")
+            self.canvas.delete("segment_fill_line")  # Segment çizgilerini sil
+            self.canvas.bind("<Button-1>", self.mouse_click)
+            self.canvas.bind("<Button-3>", self.select_axis)
 
 
     def draw_curve_line(self):

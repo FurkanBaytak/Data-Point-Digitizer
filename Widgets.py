@@ -54,7 +54,10 @@ class Widgets:
         digitize_menu = tk.Menu(menubar, tearoff=0)
         digitize_menu.add_command(label="Place Axis", command=self.viewer.show_axis)
         digitize_menu.add_command(label="Set Axis", command=self.viewer.set_axis)
-        digitize_menu.add_command(label="Add Points", command=self.viewer.show_points)
+        digitize_menu.add_command(label="Select Tool", command=self.viewer.select_tool)
+        digitize_menu.add_command(label="Curve Point Tool", command=self.viewer.show_points)
+        digitize_menu.add_command(label="Point Match Tool", command=self.viewer.show_point_match_tool)
+        digitize_menu.add_command(label="Segment Fill Tool", command=self.viewer.show_segment_fill_tool)
         digitize_menu.add_command(label="Calculate", command=self.viewer.calculate_values)
         digitize_menu.add_command(label="Delete Curve", command=self.viewer.delete_curve)
         digitize_menu.add_command(label="Add Curve", command=self.viewer.add_curve)
@@ -65,6 +68,9 @@ class Widgets:
         view_menu = tk.Menu(menubar, tearoff=0)
         view_menu.add_checkbutton(label="Geometry Window", command=self.toggle_geometry_window)
         view_menu.add_checkbutton(label="Grid Lines", command=self.toggle_grid_lines)
+        view_menu.add_separator()
+        view_menu.add_command(label="Zoom In", command=self.zoom_in)
+        view_menu.add_command(label="Zoom Out", command=self.zoom_out)
         view_menu.add_separator()
 
         # Background submenu
@@ -109,6 +115,10 @@ class Widgets:
                                                         command=self.viewer.show_point_match_tool)
         self.viewer.point_match_tool_button.pack(pady=5)
 
+        self.viewer.segment_fill_tool_button = tk.Button(button_frame, text="Segment Fill Tool",
+                                                         command=self.viewer.show_segment_fill_tool)
+        self.viewer.segment_fill_tool_button.pack(pady=5)
+
         self.viewer.calculate_button = tk.Button(button_frame, text="Calculate", command=self.viewer.calculate_values)
         self.viewer.calculate_button.pack(pady=5)
 
@@ -146,6 +156,9 @@ class Widgets:
         self.viewer.canvas.bind("<Button-1>", self.viewer.mouse_click)
         self.viewer.canvas.bind("<Button-3>", self.viewer.select_axis)
 
+        # Bind MouseWheel event
+        self.viewer.canvas.bind("<Control-MouseWheel>", self.zoom_with_mousewheel)
+
     def toggle_geometry_window(self):
         """
         Toggle the visibility of the Geometry Window.
@@ -166,6 +179,60 @@ class Widgets:
             self.viewer.draw_grid()
         else:
             self.viewer.canvas.delete('grid_line')
+
+    def zoom_with_mousewheel(self, event):
+        """
+        Zoom in or out with mouse wheel while holding CTRL.
+        """
+        if event.delta > 0:
+            self.zoom_in_with_position(event)
+        else:
+            self.zoom_out_with_position(event)
+
+    def zoom_in_with_position(self, event):
+        """
+        Zoom in towards the mouse cursor position.
+        """
+        self.viewer.zoom_factor *= 1.2
+        self.update_image_zoom_with_position(event)
+
+    def zoom_out_with_position(self, event):
+        """
+        Zoom out from the mouse cursor position.
+        """
+        self.viewer.zoom_factor /= 1.2
+        self.update_image_zoom_with_position(event)
+
+    def update_image_zoom_with_position(self, event):
+        """
+        Update the zoom level of the image based on the current zoom factor and mouse cursor position.
+        """
+        if self.viewer.image_original is not None:
+            canvas_width = self.viewer.canvas.winfo_width()
+            canvas_height = self.viewer.canvas.winfo_height()
+
+            # Get the current mouse position on the canvas
+            mouse_x = self.viewer.canvas.canvasx(event.x)
+            mouse_y = self.viewer.canvas.canvasy(event.y)
+
+            # Calculate the new image dimensions
+            new_width = int(self.viewer.image_original.width * self.viewer.zoom_factor)
+            new_height = int(self.viewer.image_original.height * self.viewer.zoom_factor)
+
+            # Resize the image
+            resized_image = self.viewer.image_original.resize((new_width, new_height), resample=Image.LANCZOS)
+            self.viewer.image_tk = ImageTk.PhotoImage(resized_image)
+
+            # Clear the canvas
+            self.viewer.canvas.delete("all")
+
+            # Calculate the new position to keep the mouse cursor position stable
+            new_x = mouse_x - (mouse_x - self.viewer.canvas.canvasx(0)) * (new_width / self.viewer.image_original.width)
+            new_y = mouse_y - (mouse_y - self.viewer.canvas.canvasy(0)) * (
+                        new_height / self.viewer.image_original.height)
+
+            # Create the new image on the canvas
+            self.viewer.canvas.create_image(new_x, new_y, anchor=tk.NW, image=self.viewer.image_tk)
 
     def zoom_in(self):
         """
